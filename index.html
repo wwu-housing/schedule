@@ -13,9 +13,9 @@
 
         <!-- Custom styles for this template -->
         <style>
-            #content #events li {
-                border-left: 3px solid;
-                padding-left: 5px;
+            #content .day > ul > li {
+                border-left: 0.2em solid;
+                padding-left: .5em;
             }
             .day {
                 margin-bottom: 2em;
@@ -24,7 +24,6 @@
     </head>
 
     <body>
-
         <div class="navbar navbar-inverse navbar-top">
             <div class="container">
                 <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
@@ -89,16 +88,34 @@
             <% }); %>
         </ul>
         <ul id="events" class="list-unstyled">
-            <% _.each(e_data, function(e) { %>
-                <li style="border-color: <%- e.req.color %>"><%- e.name %> - <%- e.place %> at <%- e.time.start %> <span class="label pull-right"><%- e.req.text %></span></li>
+            <% _.each(e_data, function(d) { %>
+                <li class="day list-unstyled">
+                    <ul class="list-unstyled">
+                        <% _.each(d, function(e) { %>
+                            <li style="border-color: <%- e.req.color %>">
+                                <h4><%- e.name %></h4>
+                                <p><%- e.place %> from <%- new Date(e.time.start) %> to <%- new Date(e.time.end) %></p>
+                            </li>
+                        <% }); %>
+                    </ul>
+                </li>
             <% }); %>
         </ul>
     </script>
     <script type="text/template" id="detail-person-template">
         <h3><%- name %></h3>
         <ul id="events" class="list-unstyled">
-            <% _.each(e_data, function(e) { %>
-                <li style="border-color: <%- e.req.color %>"><%- e.name %> - <%- e.place %> at <%- new Date(e.time.start) %> <span class="label pull-right"><%- e.req.text %></span></li>
+            <% _.each(e_data, function(d) { %>
+                <li class="day list-unstyled">
+                    <ul class="list-unstyled">
+                        <% _.each(d, function(e) { %>
+                            <li style="border-color: <%- e.req.color %>">
+                                <h4><%- e.name %></h4>
+                                <p><%- e.place %> from <%- new Date(e.time.start) %> to <%- new Date(e.time.end) %></p>
+                            </li>
+                        <% }); %>
+                    </ul>
+                </li>
             <% }); %>
         </ul>
     </script>

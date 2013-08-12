@@ -82,6 +82,24 @@ $(function(){
         render: function() {
             this.$el.html(this.template(this.model.toJSON()));
             return this;
+        },
+    });
+    var HasEventDetailView = DetailView.extend({
+        get_e_data: function(events) {
+            this.e_data = [];
+            _.each(events, function(e) {
+                full_e = all_events.findWhere({'id': e.id});
+                if (full_e) {
+                    var single_e = full_e.toJSON();
+                    single_e['req'] = requirements_list[e.requirement];
+                    this.e_data.push(single_e);
+                }
+            }, this);
+            this.e_data = _.groupBy(_.sortBy(this.e_data, function(e) {
+                return e.time.start;
+            }), function(e) {
+                return new Date(e.time.start).getDate();
+            });
         }
     });
     var JobView = DetailView.extend({
@@ -91,21 +109,7 @@ $(function(){
             this.listenTo(this.model, 'destroy', this.remove);
 
             // get events for this job
-            this.e_data = [];
-            _.each(this.model.get('events'), function(e) {
-                full_e = all_events.findWhere({'id': e.id});
-                if (full_e) {
-                    this.e_data.push({
-                        'req': requirements_list[e.requirement],
-                        'name': full_e.get('name'),
-                        'time': new Date(full_e.get('time')),
-                        'place': full_e.get('place')
-                    });
-                }
-            }, this);
-            _.sortBy(this.e_data, function(e) {
-                return e.time;
-            });
+            this.get_e_data(this.model.get('events'));
         },
         render: function() {
             var json = this.model.toJSON();
@@ -141,21 +145,7 @@ $(function(){
                 }, this);
             }, this);
 
-            this.e_data = [];
-            _.each(this.events_, function(e) {
-                full_e = all_events.findWhere({'id': e.id});
-                if (full_e) {
-                    this.e_data.push({
-                        'req': requirements_list[e.requirement],
-                        'name': full_e.get('name'),
-                        'time': full_e.get('time'),
-                        'place': full_e.get('place')
-                    });
-                }
-            }, this);
-            _.sortBy(this.e_data, function(e) {
-                return e.time;
-            })
+            this.get_e_data(this.events_);
         },
         render: function() {
             var json = this.model.toJSON();
@@ -175,9 +165,10 @@ $(function(){
             this.listenTo(all_events, 'all', this.render());
         },
         render: function() {
-            var json = { 'events': _.groupBy(all_events.toJSON(), function(e) {
+            var days = _.groupBy(all_events.toJSON(), function(e) {
                 return new Date(e.time.start).getDate();
-            })}
+            });
+            var json = { 'events': days };
             console.log(json);
             this.$el.html(this.template(json));
             return this;
