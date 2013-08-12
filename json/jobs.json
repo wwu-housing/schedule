@@ -1,0 +1,254 @@
+[
+    {
+        "id": 0,
+        "name": "Consultant",
+        "people": ["kuhnsj"],
+        "events": [
+            {
+                "id": 1,
+                "requirement": "r"
+            },
+            {
+                "id": 3,
+                "requirement": "r"
+            },
+            {
+                "id": 4,
+                "requirement": "r"
+            },
+            {
+                "id": 5,
+                "requirement": "r"
+            },
+            {
+                "id": 6,
+                "requirement": "r"
+            },
+            {
+                "id": 8,
+                "requirement": "r"
+            },
+            {
+                "id": 10,
+                "requirement": "r"
+            },
+            {
+                "id": 11,
+                "requirement": "r"
+            },
+            {
+                "id": 12,
+                "requirement": "r"
+            },
+            {
+                "id": 13,
+                "requirement": "r"
+            },
+            {
+                "id": 14,
+                "requirement": "r"
+            },
+            {
+                "id": 15,
+                "requirement": "r"
+            },
+            {
+                "id": 16,
+                "requirement": "r"
+            },
+            {
+                "id": 17,
+                "requirement": "r"
+            },
+            {
+                "id": 18,
+                "requirement": "r"
+            },
+            {
+                "id": 19,
+                "requirement": "r"
+            },
+            {
+                "id": 20,
+                "requirement": "r"
+            },
+            {
+                "id": 21,
+                "requirement": "r"
+            },
+            {
+                "id": 22,
+                "requirement": "r"
+            },
+            {
+                "id": 23,
+                "requirement": "r"
+            },
+            {
+                "id": 24,
+                "requirement": "r"
+            },
+            {
+                "id": 25,
+                "requirement": "r"
+            },
+            {
+                "id": 26,
+                "requirement": "o"
+            }
+        ]
+    },
+    {
+        "id": 1,
+        "name": "Server Admin",
+        "people": ["longb4", "foxk5"],
+        "events": [
+            {
+                "id": 1,
+                "requirement": "r"
+            },
+            {
+                "id": 3,
+                "requirement": "r"
+            },
+            {
+                "id": 4,
+                "requirement": "r"
+            },
+            {
+                "id": 6,
+                "requirement": "r"
+            },
+            {
+                "id": 8,
+                "requirement": "o"
+            },
+            {
+                "id": 10,
+                "requirement": "r"
+            },
+            {
+                "id": 16,
+                "requirement": "rc"
+            },
+            {
+                "id": 17,
+                "requirement": "r"
+            },
+            {
+                "id": 18,
+                "requirement": "r"
+            },
+            {
+                "id": 20,
+                "requirement": "o"
+            },
+            {
+                "id": 22,
+                "requirement": "o"
+            },
+            {
+                "id": 24,
+                "requirement": "r"
+            },
+            {
+                "id": 25,
+                "requirement": "r"
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "name": "Interns",
+        "people": [],
+        "events": [
+            {
+                "id": 7,
+                "requirement": "o"
+            },
+            {
+                "id": 8,
+                "requirement": "r"
+            },
+            {
+                "id": 9,
+                "requirement": "r"
+            },
+            {
+                "id": 11,
+                "requirement": "r"
+            },
+            {
+                "id": 13,
+                "requirement": "r"
+            },
+            {
+                "id": 14,
+                "requirement": "r"
+            },
+            {
+                "id": 15,
+                "requirement": "o"
+            },
+            {
+                "id": 16,
+                "requirement": "r"
+            },
+            {
+                "id": 17,
+                "requirement": "r"
+            },
+            {
+                "id": 18,
+                "requirement": "r"
+            },
+            {
+                "id": 19,
+                "requirement": "r"
+            },
+            {
+                "id": 20,
+                "requirement": "r"
+            },
+            {
+                "id": 21,
+                "requirement": "r"
+            },
+            {
+                "id": 22,
+                "requirement": "r"
+            },
+            {
+                "id": 23,
+                "requirement": "o"
+            },
+            {
+                "id": 24,
+                "requirement": "r"
+            },
+            {
+                "id": 25,
+                "requirement": "r"
+            },
+            {
+                "id": 26,
+                "requirement": "o"
+            },
+            {
+                "id": 12,
+                "requirement": "r"
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "name": "All Staff",
+        "people": ["longb4", "kelleyb4", "littlec8", "nylinc", "cottond", "dfrost", "asadf", "pierceg2", "mcturnh", "howard", "lebedi", "kuhnsj", "foxk5", "bradfol3", "coltonl", "mooneym3", "goldenm4", "edlandm", "krichen", "millaro", "jumao", "robert"],
+        "events": [
+            {
+                "id": 0,
+                "requirement": "r"
+            }
+        ]
+    }
+]
