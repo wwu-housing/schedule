@@ -15,13 +15,17 @@ $(function(){
     var Jobs = Backbone.Collection.extend({
         url: "json/jobs.json",
         model: Job,
+        comparator: function(e) {
+            return e.get('title_sanitized');
+        }
     });
-
     var People = Backbone.Collection.extend({
         url: "json/people.json",
         model: Person,
+        comparator: function(e) {
+            return e.get('name');
+        }
     });
-
     var Events = Backbone.Collection.extend({
         url: "json/events.json",
         model: Event,
@@ -170,27 +174,42 @@ $(function(){
         template: _.template($('#detail-event-template').html()),
     });
 
-    var AllEventsView = Backbone.View.extend({
-        template: _.template($('#all-events-template').html()),
-        events: {},
+    var AllView = Backbone.View.extend({
+        template: _.template($('#all-template').html()),
         initialize: function() {
-            this.listenTo(all_events, 'all', this.render());
+            this.listenTo(this.collection, 'all', this.render());
         },
         render: function() {
-            var days = _.groupBy(all_events.toJSON(), function(e) {
+            // console.log(this.collection.toJSON());
+            this.$el.html(this.template({ 'things': this.collection.toJSON() }));
+            return this;
+        }
+    });
+    var AllEventsView = AllView.extend({
+        template: _.template($('#all-events-template').html()),
+        render: function() {
+            var days = _.groupBy(this.collection.toJSON(), function(e) {
                 return new Date(e.time.start).getDate();
             });
             var json = { 'events': days };
             this.$el.html(this.template(json));
             return this;
         }
-    })
+    });
+    var AllPeopleView = AllView.extend({
+        template: _.template($('#all-people-template').html()),
+    });
+    var AllJobsView = AllView.extend({
+        template: _.template($('#all-jobs-template').html()),
+    });
+    // TODO new views
+    var OverView; // overview of all data (all people, their jobs, and all events)
 
     var EmptyState = Backbone.View.extend({
         render: function() {
             data = location.hash.split('/');
             if (data.length = 2) {
-                this.$el.html("<h3>Can't find the <a href='#person'>" + data[0] + "</a> " + data[1] + ".</h3>");
+                this.$el.html("<h3>Can't find the <a href='" + data[0] + "'>" + data[0] + "</a> " + data[1].replace('-', ' ') + ".</h3>");
             } else {
                 this.$el.html("<h3>Only emptyness here</h3>");
             }
@@ -201,7 +220,6 @@ $(function(){
     var AppView = Backbone.View.extend({
         el: $("#main"),
         events: {
-            "click .my_details_button": "get_my_details",
             "click #show_events": "show_events",
         },
         initialize: function() {
@@ -233,21 +251,21 @@ $(function(){
         addAllEvents: function() {
             this.$('#all_events').empty();
             all_events.each(this.addEvent, this);
+            return this;
         },
         addAllJobs: function() {
             this.$('#all_jobs').empty();
             all_jobs.each(this.addJob, this);
+            return this;
         },
         addAllPeople: function() {
             this.$('#all_people').empty();
             all_people.each(this.addPerson, this);
+            return this;
         },
         show_events: function() {
             app_router.navigate("event", {trigger: true});
         },
-        get_my_details: function() {
-            return false;
-        }
     });
 
     // App!
@@ -258,21 +276,29 @@ $(function(){
             this.currentView = null;
         },
         routes: {
-            "event":        "all_events",
-            "person/:username":    "person",
-            "event/:id":    "event_route",
-            "job/:title":   "job"
+            "event":            "all_events",
+            "person":           "all_people",
+            "job":              "all_jobs",
+            "person/:username": "one_person",
+            "event/:id":        "one_event",
+            "job/:title":       "one_job"
         },
         all_events: function() {
-            this.swapView(new AllEventsView());
+            this.swapView(new AllEventsView({collection: all_events}));
         },
-        event_route: function(id) {
+        all_people: function() {
+            this.swapView(new AllPeopleView({collection: all_people}));
+        },
+        all_jobs: function() {
+            this.swapView(new AllJobsView({collection: all_jobs}));
+        },
+        one_event: function(id) {
             this.swapDetailView(all_events, EventView, {'id': parseInt(id)})
         },
-        person: function(username) {
+        one_person: function(username) {
             this.swapDetailView(all_people, PersonView, {'username': username})
         },
-        job: function(title) {
+        one_job: function(title) {
             this.swapDetailView(all_jobs, JobView, {'title_sanitized': title});
         },
         swapView: function(view) {
