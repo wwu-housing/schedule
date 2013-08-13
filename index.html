@@ -6,55 +6,13 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Starter Template for Bootstrap</title>
+    <title>Schedule | WWU ResTek</title>
 
-    <!-- Bootstrap core CSS -->
+    <!-- -- -- -->
+    <!--  CSS  -->
+    <!-- -- -- -->
     <link rel="stylesheet" href="css/bootstrap-min.css">
-
-    <!-- Custom styles for this template -->
-    <style>
-        .navbar {
-            margin-bottom: 10px;
-        }
-        .day {
-            margin-bottom: 2em;
-            border-left: 0.2em dotted #ccc;
-            padding-left: 0.2em;
-        }
-        .day-of-week {
-            margin-left: 0.4em;
-        }
-        .event {
-            border-left: 0.2em solid;
-            padding-left: .5em;
-        }
-
-        .border-muted {
-            border-color: rgb(153, 153, 153);
-        }
-        .border-primary {
-            border-color: rgb(66, 139, 202);
-        }
-        .border-warning {
-            border-color: rgb(192, 152, 83);
-        }
-        .border-danger {
-            border-color: rgb(185, 74, 72);
-        }
-        .border-success {
-            border-color: rgb(70, 136, 71);
-        }
-        .border-info {
-            border-color: rgb(58, 135, 173);
-        }
-
-        .tooltip-trigger {
-            cursor: pointer;
-        }
-        a.unstyled {
-            color: inherit;
-        }
-    </style>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
@@ -77,8 +35,11 @@
                 <button id="show_events" class="btn btn-default btn-small">All Events</button>
             </div>
         </div>
-    </div><!-- /.container -->
+    </div>
 
+    <!-- -- -- -- -- -->
+    <!--  Javascript -->
+    <!-- -- -- -- -- -->
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script type="text/javascript" src="js/underscore-min.js"></script>
     <script type="text/javascript" src="js/backbone-min.js"></script>
@@ -86,6 +47,9 @@
     <script type="text/javascript" src="js/bootstrap-min.js"></script>
     <script type="text/javascript" src="js/script.js"></script>
 
+    <!-- -- -- -- -- -- -- -- -- -->
+    <!-- Underscore.js templates -->
+    <!-- -- -- -- -- -- -- -- -- -->
     <script type="text/template" id="list-item-template">
         <a href="#"><%- name %></a>
     </script>
@@ -202,6 +166,9 @@
                 </li>
             <% }); %>
         </ul>
+    </script>
+    <script type="text/template" id="overview-template">
+        <h2>Overview</h2>
     </script>
 
 </body>

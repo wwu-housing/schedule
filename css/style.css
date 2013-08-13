@@ -1,0 +1,41 @@
+.navbar {
+    margin-bottom: 10px;
+}
+.day {
+    margin-bottom: 2em;
+    border-left: 0.2em dotted #ccc;
+    padding-left: 0.2em;
+}
+.day-of-week {
+    margin-left: 0.4em;
+}
+.event {
+    border-left: 0.2em solid;
+    padding-left: .5em;
+}
+
+.border-muted {
+    border-color: rgb(153, 153, 153);
+}
+.border-primary {
+    border-color: rgb(66, 139, 202);
+}
+.border-warning {
+    border-color: rgb(192, 152, 83);
+}
+.border-danger {
+    border-color: rgb(185, 74, 72);
+}
+.border-success {
+    border-color: rgb(70, 136, 71);
+}
+.border-info {
+    border-color: rgb(58, 135, 173);
+}
+
+.tooltip-trigger {
+    cursor: pointer;
+}
+a.unstyled {
+    color: inherit;
+}
