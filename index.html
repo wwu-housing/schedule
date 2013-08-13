@@ -9,54 +9,81 @@
         <title>Starter Template for Bootstrap</title>
 
         <!-- Bootstrap core CSS -->
-        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
+        <link rel="stylesheet" href="css/bootstrap-min.css">
 
         <!-- Custom styles for this template -->
         <style>
-            #content .day > ul > li {
-                border-left: 0.2em solid;
-                padding-left: .5em;
+            .navbar {
+                margin-bottom: 10px;
             }
             .day {
                 margin-bottom: 2em;
+                border-left: 0.2em dotted #ccc;
+                padding-left: 0.2em;
+            }
+            .day-of-week {
+                margin-left: 0.4em;
+            }
+            .event {
+                border-left: 0.2em solid;
+                padding-left: .5em;
+            }
+
+            .border-muted {
+                border-color: rgb(153, 153, 153);
+            }
+            .border-primary {
+                border-color: rgb(66, 139, 202);
+            }
+            .border-warning {
+                border-color: rgb(192, 152, 83);
+            }
+            .border-danger {
+                border-color: rgb(185, 74, 72);
+            }
+            .border-success {
+                border-color: rgb(70, 136, 71);
+            }
+            .border-info {
+                border-color: rgb(58, 135, 173);
+            }
+
+            .tooltip-trigger {
+                cursor: pointer;
             }
         </style>
     </head>
 
     <body>
-        <div class="navbar navbar-inverse navbar-top">
+        <div class="navbar navbar navbar-top">
             <div class="container">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="#">Project name</a>
-                <div class="nav-collapse collapse">
-                    <ul class="nav navbar-nav">
-                        <li class="active"><a href="#">Home</a></li>
-                    </ul>
-                </div><!--/.nav-collapse -->
+                <a class="navbar-brand" href="#">Schedule</a>
             </div>
         </div>
 
         <div class="container">
-
             <div class="row" id="main">
-                <div class="col-9" id="content">
+                <div class="col-sm-9" id="content">
                 </div>
-                <div class="col-3">
-                    <ul id="all_people"></ul>
-                    <ul id="all_jobs"></ul>
+                <div class="col-sm-3 text-right">
+                    <div id="person">
+                        <h4>#person</h4><!-- #hashtags for you, @firass -->
+                        <ul id="all_people" class="list-unstyled"></ul>
+                    </div>
+                    <div id="job">
+                        <h4>#job</h4>
+                        <ul id="all_jobs" class="list-unstyled"></ul>
+                    </div>
                     <button id="show_events" class="btn btn-default btn-small">Show All Events</button>
                 </div>
             </div>
-
         </div><!-- /.container -->
 
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script type="text/javascript" src="js/underscore-min.js"></script>
     <script type="text/javascript" src="js/backbone-min.js"></script>
+    <script type="text/javascript" src="js/moment-min.js"></script>
+    <script type="text/javascript" src="js/bootstrap-min.js"></script>
     <script type="text/javascript" src="js/script.js"></script>
 
     <script type="text/template" id="list-item-template">
@@ -77,24 +104,32 @@
     </script>
     <script type="text/template" id="detail-event-template">
         <h3><%- name %></h3>
-        <p><%- new Date(time.start) %> to <%- new Date(time.end) %> at <%- place %></p>
+        <p><%- new moment(time.start).format("dddd, MMM Do h:mm a") %>
+        <% if (time.end) { %> to <%- new moment(time.end).format("dddd, MMM Do h:mm a") %><% } %>
+        <% if (place) { %> at <%- place %><% } %></p>
         <p><%- description %></p>
     </script>
     <script type="text/template" id="detail-job-template">
-        <h3><%- name %></h3>
+        <h2><%- name %></h2>
         <ul id="people" class="list-unstyled list-inline">
             <% _.each(people, function(p) { %>
-                <li><%- p %></li>
+                <li><a href="#person/<%- p %>"><%- p %></a></li>
             <% }); %>
         </ul>
         <ul id="events" class="list-unstyled">
             <% _.each(e_data, function(d) { %>
                 <li class="day list-unstyled">
+                    <h3 class="day-of-week"><%- new moment(d[0].time.start).format('dddd, MMM Do') %></h3>
                     <ul class="list-unstyled">
                         <% _.each(d, function(e) { %>
-                            <li style="border-color: <%- e.req.color %>">
+                            <li class="event border-<%- e.req.label %>" style="min-height: <%- e.height %>em;">
+                                <span class="tooltip-trigger label pull-right label-<%- e.req.label %>" data-toggle="tooltip" data-placement="left" title="<%- e.req.description %>"><%- e.req.text %></span>
                                 <h4><%- e.name %></h4>
-                                <p><%- e.place %> from <%- new Date(e.time.start) %> to <%- new Date(e.time.end) %></p>
+                                <p><% if (e.place) { %><%- e.place %>, <% } %>
+                                <%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %></p>
+                                <% if (e.description) { %>
+                                    <p><%- e.description %></p>
+                                <% } %>
                             </li>
                         <% }); %>
                     </ul>
@@ -103,15 +138,18 @@
         </ul>
     </script>
     <script type="text/template" id="detail-person-template">
-        <h3><%- name %></h3>
+        <h2><%- name %> <small><% _.each(jobs, function(j) { %><a href="#job/<%- j %>">#<%- j.replace('-', ' ') %></a> <% }) %></small></h2>
         <ul id="events" class="list-unstyled">
             <% _.each(e_data, function(d) { %>
                 <li class="day list-unstyled">
+                    <h3 class="day-of-week"><%- new moment(d[0].time.start).format('dddd, MMM Do') %></h3>
                     <ul class="list-unstyled">
                         <% _.each(d, function(e) { %>
-                            <li style="border-color: <%- e.req.color %>">
+                            <li class="event border-<%- e.req.label %>" style="min-height: <%- e.height %>em;">
+                                <span class="tooltip-trigger label pull-right label-<%- e.req.label %>" data-toggle="tooltip" data-placement="left" title="<%- e.req.description %>"><%- e.req.text %></span>
                                 <h4><%- e.name %></h4>
-                                <p><%- e.place %> from <%- new Date(e.time.start) %> to <%- new Date(e.time.end) %></p>
+                                <p><% if (e.place) { %><%- e.place %>, <% } %>
+                                <%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %></p>
                             </li>
                         <% }); %>
                     </ul>
@@ -124,11 +162,13 @@
         <ul id="all_events" class="list-unstyled">
             <% _.each(events, function(d) { %>
                 <li class="day list-unstyled">
+                    <h3 class="day-of-week"><%- new moment(d[0].time.start).format('dddd, MMM Do') %></h3>
                     <ul class="list-unstyled">
                         <% _.each(d, function(e) { %>
-                            <li style="">
-                                <h4><%- e.name %></h4>
-                                <p><%- e.place %> from <%- new Date(e.time.start) %> to <%- new Date(e.time.end) %></p>
+                            <li class="event" style="min-height: <%- (new Date(e.time.end).getTime() - new Date(e.time.start).getTime()) / (1000 * 60 * 15) %>em;">
+                                <h4><small><a href="#event/<%- e.id %>" title="<%- e.id %>">#</a></small> <%- e.name %></h4>
+                                <p><% if (e.place) { %><%- e.place %>, <% } %>
+                                <%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %></p>
                             </li>
                         <% }); %>
                     </ul>

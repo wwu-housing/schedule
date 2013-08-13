@@ -2,7 +2,7 @@
     {
         "id": 0,
         "name": "Consultant",
-        "people": ["kuhnsj"],
+        "people": ["kuhnsj", "coltonl", "cottond", "lebedi", "robert"],
         "events": [
             {
                 "id": 1,
@@ -159,7 +159,7 @@
     },
     {
         "id": 2,
-        "name": "Interns",
+        "name": "Intern",
         "people": [],
         "events": [
             {
@@ -250,5 +250,17 @@
                 "requirement": "r"
             }
         ]
+    },
+    {
+        "id": 4,
+        "name": "Webteam",
+        "people": ["edlandm", "goldenm4", "jumao", "littlec8", "mcturnh", "mooneym3", "pierceg2", "bradfol3"],
+        "events": []
+    },
+    {
+        "id": 5,
+        "name": "Lab Staff",
+        "people": ["kelleyb4", "krichen", "millaro", "nylinc"],
+        "events": []
     }
 ]

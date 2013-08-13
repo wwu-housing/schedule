@@ -1,5 +1,7 @@
 $(function(){
 
+    $('.tooltip-trigger').tooltip();
+
     // models
     var Job = Backbone.Model.extend({
         initialize: function() {
@@ -31,17 +33,22 @@ $(function(){
     var requirements_list = {
         "r": {
             "text": "Required",
-            "color": "red",
+            "label": "danger",
             "description": "Attendance is mandatory"
         },
         "o": {
             "text": "Optional",
-            "color": "yellow",
+            "label": "warning",
             "description": "Attendance is optional"
+        },
+        "s": {
+            "text": "Partial",
+            "label": "info",
+            "description": "Stay as long as content is relavent"
         },
         "rc": {
             "text": "Possible",
-            "color": "orange",
+            "label": "info",
             "description": "May not need to stay for content"
         }
     };
@@ -92,6 +99,8 @@ $(function(){
                 if (full_e) {
                     var single_e = full_e.toJSON();
                     single_e['req'] = requirements_list[e.requirement];
+                    var height = (new Date(single_e.time.end).getTime() - new Date(single_e.time.start).getTime()) / (1000 * 60 * 15); // min-height in em's, 1 em to 15 minutes
+                    single_e['height'] = height;
                     this.e_data.push(single_e);
                 }
             }, this);
@@ -102,7 +111,7 @@ $(function(){
             });
         }
     });
-    var JobView = DetailView.extend({
+    var JobView = HasEventDetailView.extend({
         template: _.template($('#detail-job-template').html()),
         initialize: function() {
             this.listenTo(this.model, 'change', this.render);
@@ -118,7 +127,7 @@ $(function(){
             return this;
         }
     });
-    var PersonView = DetailView.extend({
+    var PersonView = HasEventDetailView.extend({
         template: _.template($('#detail-person-template').html()),
         initialize: function() {
             this.listenTo(this.model, 'change', this.render);
@@ -150,6 +159,9 @@ $(function(){
         render: function() {
             var json = this.model.toJSON();
             json['e_data'] = this.e_data;
+            json['jobs'] = _.without(this.jobs.map(function(j) {
+                return j.get('title_sanitized');
+            }), 'all-staff');
             this.$el.html(this.template(json));
             return this;
         }
@@ -169,11 +181,22 @@ $(function(){
                 return new Date(e.time.start).getDate();
             });
             var json = { 'events': days };
-            console.log(json);
             this.$el.html(this.template(json));
             return this;
         }
     })
+
+    var EmptyState = Backbone.View.extend({
+        render: function() {
+            data = location.hash.split('/');
+            if (data.length = 2) {
+                this.$el.html("<h3>Can't find the <a href='#person'>" + data[0] + "</a> " + data[1] + ".</h3>");
+            } else {
+                this.$el.html("<h3>Only emptyness here</h3>");
+            }
+            return this;
+        }
+    });
 
     var AppView = Backbone.View.extend({
         el: $("#main"),
@@ -244,37 +267,13 @@ $(function(){
             this.swapView(new AllEventsView());
         },
         event_route: function(id) {
-            // do stuff...
-            var m = all_events.findWhere({'id': parseInt(id)});
-            if (m) {
-                this.swapView(new EventView({
-                    model: m
-                }));
-            } else {
-                console.log("the event with id " + id + " was not found");
-            }
+            this.swapDetailView(all_events, EventView, {'id': parseInt(id)})
         },
         person: function(username) {
-            // do stuff...
-            var m = all_people.findWhere({'username': username});
-            if (m) {
-                this.swapView(new PersonView({
-                    model: m
-                }));
-            } else {
-                console.log("the username " + username + " was not found");
-            }
+            this.swapDetailView(all_people, PersonView, {'username': username})
         },
         job: function(title) {
-            // do stuff...
-            var m = all_jobs.findWhere({'title_sanitized': title});
-            if (m) {
-                this.swapView(new JobView({
-                    model: m
-                }));
-            } else {
-                console.log("the job " + title + " was not found");
-            }
+            this.swapDetailView(all_jobs, JobView, {'title_sanitized': title});
         },
         swapView: function(view) {
             if (this.currentView) {
@@ -282,6 +281,17 @@ $(function(){
             }
             this.currentView = view;
             $('#content').html(this.currentView.render().el);
+            $('.tooltip-trigger').tooltip();
+        },
+        swapDetailView: function(collection, view, attrs) {
+            var m = collection.findWhere(attrs);
+            if (m) {
+                this.swapView(new view({
+                    model: m
+                }));
+            } else {
+                this.swapView(new EmptyState({'view': view}));
+            }
         }
     });
 

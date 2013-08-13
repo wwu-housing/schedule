@@ -36,7 +36,7 @@
             "start": "2013-09-18T12:00:00",
             "end": "2013-09-18T13:00:00"
         },
-        "place": "Fairhaven",
+        "place": "Fairhaven Commons",
         "description": ""
     },
     {
@@ -66,7 +66,7 @@
             "start": "2013-09-18T17:30:00",
             "end": "2013-09-18T18:30:00"
         },
-        "place": "Fairhaven",
+        "place": "Fairhaven Commons",
         "description": ""
     },
     {
@@ -116,7 +116,7 @@
             "start": "2013-09-19T12:00:00",
             "end": "2013-09-19T13:00:00"
         },
-        "place": "Fairhaven",
+        "place": "Fairhaven Commons",
         "description": ""
     },
     {
@@ -134,7 +134,7 @@
         "name": "Review",
         "time": {
             "start": "2013-09-19T16:00:00",
-            "end": "2013-09-20T17:00:00"
+            "end": "2013-09-19T17:00:00"
         },
         "place": "CF 314",
         "description": ""
@@ -144,7 +144,7 @@
         "name": "Dinner",
         "time": {
             "start": "2013-09-19T17:30:00",
-            "end": "2013-09-20T18:30:00"
+            "end": "2013-09-19T18:30:00"
         },
         "place": "Fairhaven Commons",
         "description": ""
@@ -154,7 +154,7 @@
         "name": "Room Visits",
         "time": {
             "start": "2013-09-19T18:30:00",
-            "end": "2013-09-20T19:30:00"
+            "end": "2013-09-19T19:30:00"
         },
         "place": "",
         "description": ""
@@ -226,7 +226,7 @@
             "start": "2013-09-20T17:30:00",
             "end": "2013-09-20T18:30:00"
         },
-        "place": "Fairhaven",
+        "place": "Fairhaven Commons",
         "description": ""
     },
     {
