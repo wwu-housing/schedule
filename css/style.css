@@ -5,6 +5,14 @@ h2 {
 .navbar {
     margin-bottom: 10px;
 }
+@media (min-width: 768px) {
+    .navbar-header {
+        padding-left: 0;
+    }
+    #side {
+        text-align: right;
+    }
+}
 .day {
     margin-bottom: 2em;
     border-left: 0.2em dotted #ccc;
