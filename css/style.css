@@ -43,12 +43,6 @@
     font-size: 18px;
     opacity: 0.4;
 }
-#overview .first-of-day {
-    border-top: 2px dotted #999;
-}
-#overview .first-of-day:last-child {
-    border-top: none;
-}
 #overview .day {
     display: block;
     margin-bottom: 0;
@@ -56,15 +50,6 @@
 }
 #overview .day td {
     border-top: none;
-}
-#overview .affix {
-
-}
-#overview .affix-top {
-
-}
-#overview .affix-bottom {
-
 }
 
 .border-muted {

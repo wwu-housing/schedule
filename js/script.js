@@ -52,10 +52,12 @@ $(function(){
             this.listenTo(all_jobs, 'reset', this.addAllJobs);
             this.listenTo(all_people, 'reset', this.addAllPeople);
 
+            // add everything to the sidebar and render this view,
+            // it's not controlled by the router so it has to render itself
             this.addAllPeople().addAllJobs().render();
         },
         render: function() {
-            this.$('#content').text("Nothing to see here");
+            this.$('#content').text('Nothing has loaded yet...');
             return this;
         },
         addJob: function(ev) {
@@ -122,11 +124,14 @@ $(function(){
     var HasEventDetailView = DetailView.extend({
         get_e_data: function(events) {
             this.e_data = [];
+            // get the full event data for each event
             _.each(events, function(e) {
                 full_e = all_events.findWhere({'id': e.id});
                 if (full_e) {
                     var single_e = full_e.toJSON();
+                    // get the full requirement data
                     single_e['req'] = requirements_list[e.requirement];
+                    // compute the height
                     var height = (new Date(single_e.time.end).getTime() - new Date(single_e.time.start).getTime()) / (1000 * 60 * 15); // min-height in em's, 1 em to 15 minutes
                     single_e['height'] = height;
                     this.e_data.push(single_e);
@@ -134,6 +139,7 @@ $(function(){
                     console.log("Event " + e.id + " was not found.");
                 }
             }, this);
+            // group by day
             this.e_data = _.groupBy(_.sortBy(this.e_data, function(e) {
                 return e.time.start;
             }), function(e) {
@@ -152,6 +158,7 @@ $(function(){
         },
         render: function() {
             var json = this.model.toJSON();
+            // pass event data to the template as well as model data
             json['e_data'] = this.e_data;
             this.$el.html(this.template(json));
             return this;
@@ -184,10 +191,12 @@ $(function(){
                 }, this);
             }, this);
 
+            // get events for this job
             this.get_e_data(this.events_);
         },
         render: function() {
             var json = this.model.toJSON();
+            // pass event and job data into this template as well as model data
             json['e_data'] = this.e_data;
             json['jobs'] = _.without(this.jobs.map(function(j) {
                 return j.get('title_sanitized');
@@ -255,6 +264,7 @@ $(function(){
                 _.each(this.data.events, function(e, e_i) {
                     // put event data for each person in it...
                     e_p = all_people.map(function(p) {
+                        // get only data for this event
                         var test = _.findWhere(p.toJSON().events, { id: e_i });
                         if (test) {
                             return test.requirement;
@@ -263,7 +273,7 @@ $(function(){
                         }
                     });
                     e['p_data'] = e_p;
-                    // for each person...
+                    // for each person get their job information as well
                     _.each(e.p_data, function(p, p_i, p_list) {
                         // get the person's username
                         var username = all_people.at(p_i).get('username');
@@ -286,7 +296,9 @@ $(function(){
                         }, this);
                     });
 
+                    // put event data for each job in the event
                     e_j = all_jobs.map(function(j) {
+                        // get only data for this event
                         var test = _.findWhere(j.toJSON().events, { id: e_i });
                         if (test) {
                             return test.requirement;
@@ -296,11 +308,13 @@ $(function(){
                     });
                     e['j_data'] = e_j;
                 });
+                // group events by day
                 this.data.events = _.groupBy(_.sortBy(this.data.events, function(e) {
                     return e.time.start;
                 }), function(e) {
                     return new Date(e.time.start).getDate();
                 });
+                // get usernames and titles
                 this.data['usernames'] = all_people.pluck('username');
                 this.data['titles'] = all_jobs.pluck('title_sanitized');
             }
@@ -308,19 +322,23 @@ $(function(){
         },
         render: function() {
             this.$el.html(this.template(this.generate_data()));
-            this.$('.day').first().addClass('day-first');
             return this;
         },
         hide_column: function(e) {
+            // get the clicked element
             var $element = $(e.currentTarget);
+            // this class needs to be hidden
             var col_class = $element.parent().parent().attr('class').replace('job', '').replace('person', '').replace(/^\s\s*/, '').replace(/\s\s*$/, '');
 
+            // hide any cell with the (column designating) class
             this.$('#overview .' + col_class).addClass('hidden');
+            // show the 'show' li
             this.$('.u_hidden .' + col_class).removeClass('hidden');
 
-            this.check_hidden();
+            return this.check_hidden();
         },
         show_column: function(e) {
+            // see the comments for hide_column. this does the opposite
             e.preventDefault();
             var $element = $(e.currentTarget);
             var col_class = $element.parent().attr('class').replace('job', '').replace('person', '').replace(/^\s\s*/, '').replace(/\s\s*$/, '');
@@ -328,11 +346,12 @@ $(function(){
             this.$('#overview .' + col_class).removeClass('hidden');
             this.$('.u_hidden .' + col_class).addClass('hidden');
 
-            this.check_hidden();
+            return this.check_hidden();
         },
         toggle: function(e, c) {
             var $element = $(e.currentTarget);
 
+            // when a toggle is clicked, it will show all or hide all, based on if it's checked or not
             if ($element.is(":checked")) {
                 this.$('#overview .' + c).removeClass('hidden');
                 this.$('.u_hidden .' + c).addClass('hidden');
@@ -349,10 +368,11 @@ $(function(){
             this.toggle(e, 'person');
         },
         check_hidden: function() {
+            // get the element
             var $u_hidden = this.$('.u_hidden');
+            // show it
             $u_hidden.removeClass('hidden');
-            console.log($u_hidden.find('li').length);
-            console.log($u_hidden.find('li.hidden').length + 1);
+            // if all of it's children are hidden (except the first), hide it
             if ($u_hidden.find('li').length == $u_hidden.find('li.hidden').length + 1) {
                 $u_hidden.addClass('hidden');
             }
@@ -360,11 +380,13 @@ $(function(){
         }
     });
 
-    // empty state (none of a type found)
+    // empty state - essentially a 404
     var EmptyState = Backbone.View.extend({
         render: function() {
             data = location.hash.split('/');
             if (data.length == 2) {
+                // this can happen if a user, job, or event isn't found.
+                // It'll direct to the main page for the 'type' it thinks you're looking for.
                 this.$el.html("<h3>Can't find the <a href='" + data[0] + "'>" + data[0] + "</a> " + data[1].replace('-', ' ') + ".</h3>");
             } else {
                 this.$el.html("<h3>Only emptiness here</h3>");
@@ -426,11 +448,14 @@ $(function(){
             this.navigate(location.hash.slice(0, -1), {trigger: true});
         },
         swapView: function(view) {
+            // if a view exists, remove it from the dom and stop event handlers
             if (this.currentView) {
                 this.currentView.remove();
             }
             this.currentView = view;
+            // put the new view's content into the #content element after it's rendered
             $('#content').html(this.currentView.render().el);
+            // any new elements need their tooltips started
             $('.tooltip-trigger').tooltip();
         },
         swapDetailView: function(collection, view, attrs) {
