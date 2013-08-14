@@ -15,19 +15,27 @@
 }
 .username .rotate {
     -webkit-transform: rotate(-70deg);
+       -moz-transform: rotate(-70deg);
+         -o-transform: rotate(-70deg);
+            transform: rotate(-70deg);
     display: block;
     width: 1em;
     position: relative;
     bottom: -3.7em;
     left: -0.25em;
 }
-.username th {
-    height: 6em;
-    border-top: none;
-}
 
+#overview_container {
+    overflow-x: scroll;
+    -webkit-overflow-scrolling: touch;
+}
+#overview {
+    margin-top: -3em;
+}
 #overview .username th {
     border-top: none;
+    white-space: nowrap;
+    height: 7em;
 }
 #overview .username .close {
     float: none;
@@ -35,24 +43,11 @@
     font-size: 18px;
     opacity: 0.4;
 }
-.event-name {
-    position: relative;
-}
-.event-name span {
-    -webkit-transform: rotate(-90deg);
-    display: inline-block;
-    position: absolute;
-    left: -1.4em;
-    top: 1em;
-}
 #overview .first-of-day {
-    border-top: 2px solid;
+    border-top: 2px dotted #999;
 }
-#overview .first-of-day:first {
-    border-color: red;
-}
-#overview .day-first {
-    margin-top: -3.8em;
+#overview .first-of-day:last-child {
+    border-top: none;
 }
 #overview .day {
     display: block;
@@ -61,6 +56,15 @@
 }
 #overview .day td {
     border-top: none;
+}
+#overview .affix {
+
+}
+#overview .affix-top {
+
+}
+#overview .affix-bottom {
+
 }
 
 .border-muted {

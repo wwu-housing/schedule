@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="">
 
     <title>Schedule | WWU ResTek</title>
 
@@ -24,9 +23,9 @@
 
     <div class="container">
         <div class="row" id="main">
-            <div class="col-sm-9" id="content">
+            <div class="col-sm-9 col-lg-10" id="content">
             </div>
-            <div class="col-sm-3 text-right">
+            <div class="col-sm-3 col-lg-2 text-right">
                 <h4><a href="#person" class="unstyled">#person</a></h4><!-- #hashtags for you, @firassity -->
                 <ul id="all_people" class="list-unstyled"></ul>
                 <h4><a href="#job" class="unstyled">#job</a></h4>
@@ -192,32 +191,55 @@
     </script>
     <script type="text/template" id="overview-template">
         <h2>Overview</h2>
+        <div class="btn-group" data-toggle="buttons">
+            <label class="btn btn-default btn-small active">
+                <input type="checkbox" id="toggle-jobs" checked> #job
+            </label>
+            <label class="btn btn-default btn-small">
+                <input type="checkbox" id="toggle-people"> #people
+            </label>
+        </div>
         <ul class="u_hidden list-inline">
-            <li><h5>Hidden people:</h5></li>
+            <li><h5>Hidden:</h5></li>
+            <% _.each(titles, function(j) { %>
+                <li class="<%- j %> hidden job"><a href="#" class="open"><%- j %></a></li>
+            <% }); %>
+            <% _.each(usernames, function(p) { %>
+                <li class="<%- p %> person"><a href="#" class="open"><%- p %></a></li>
+            <% }); %>
         </ul>
-        <table class="table" id="overview">
-            <tr class="username">
-                <th></th>
-                <% _.each(usernames, function(p) { %>
-                    <th class="<%- p %>"><span class="rotate"><a href="#person/<%- p %>"><%- p %></a><span class="close">x</span></span></th>
-                <% }); %>
-            </tr>
-            <tr>
-            <% _.each(events, function(d, d_i) { %>
-                <tr class="day"><td><h4><%- new moment(d[0].time.start).format('dddd') %></h4></td></tr>
-                <% _.each(d, function(e) { %>
-                    <th class="event-name "><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></th>
-                        <% _.each(e.p_data, function(u, u_i) { %>
-                            <td class="<%- usernames[u_i] %><% if (u) { %> text-<%- requirements_list[u].label %><% }; %>">
-                                <% if (u) { %><span class="tooltip-trigger" data-toggle="tooltip" data-container="body" title="<%- requirements_list[u].description %>"><%- u %></span><% }; %></td>
+        <div id="overview_container">
+            <table class="table" id="overview">
+                <thead id="overview_head">
+                    <tr class="username">
+                        <th></th>
+                        <% _.each(titles, function(j) { %>
+                            <th class="<%- j %> job"><span class="rotate"><a href="#job/<%- j %>"><%- j.replace('-', ' ') %></a><span class="close">x</span></span></th>
+                        <% }); %>
+                        <% _.each(usernames, function(p) { %>
+                            <th class="<%- p %> hidden person"><span class="rotate"><a href="#person/<%- p %>"><%- p %></a><span class="close">x</span></span></th>
                         <% }); %>
                     </tr>
-                    <tr>
+                </thead>
+                <tr>
+                <% _.each(events, function(d, d_i) { %>
+                    <tr class="day"><td><h4><%- new moment(d[0].time.start).format('dddd') %></h4></td></tr>
+                    <% _.each(d, function(e) { %>
+                        <th class="event-name"><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></th>
+                            <% _.each(e.j_data, function(j, j_i) { %>
+                                <td class="<%- titles[j_i] %><% if (j) { %> text-<%- requirements_list[j].label %><% }; %> job"><% if (j) { %><span class="tooltip-trigger" data-toggle="tooltip" data-container="body" title="<%- requirements_list[j].description %>"><%- j %></span><% }; %></td>
+                            <% }); %>
+                            <% _.each(e.p_data, function(u, u_i) { %>
+                                <td class="<%- usernames[u_i] %> hidden <% if (u) { %> text-<%- requirements_list[u].label %><% }; %> person"><% if (u) { %><span class="tooltip-trigger" data-toggle="tooltip" data-container="body" title="<%- requirements_list[u].description %>"><%- u %></span><% }; %></td>
+                            <% }); %>
+                        </tr>
+                        <tr>
+                    <% }); %>
+                    </tr>
+                    <tr class="first-of-day">
                 <% }); %>
-                </tr>
-                <tr class="first-of-day">
-            <% }); %>
-        </table>
+            </table>
+        </div>
     </script>
 
 </body>

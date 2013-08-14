@@ -239,8 +239,10 @@ $(function(){
             this.listenTo(all_jobs, 'all', this.render());
         },
         events: {
-            'click .close': 'hide_column',
-            'click .u_hidden .open': 'show_column'
+            'click .close':         'hide_column',
+            'click .u_hidden .open':'show_column',
+            'change #toggle-jobs':     'toggle_jobs',
+            'change #toggle-people':   'toggle_people',
         },
         generate_data: function() {
             // NOTE: if this data ever is dynamically changed, a flag will
@@ -283,6 +285,16 @@ $(function(){
                             }
                         }, this);
                     });
+
+                    e_j = all_jobs.map(function(j) {
+                        var test = _.findWhere(j.toJSON().events, { id: e_i });
+                        if (test) {
+                            return test.requirement;
+                        } else {
+                            return '';
+                        }
+                    });
+                    e['j_data'] = e_j;
                 });
                 this.data.events = _.groupBy(_.sortBy(this.data.events, function(e) {
                     return e.time.start;
@@ -290,6 +302,7 @@ $(function(){
                     return new Date(e.time.start).getDate();
                 });
                 this.data['usernames'] = all_people.pluck('username');
+                this.data['titles'] = all_jobs.pluck('title_sanitized');
             }
             return this.data;
         },
@@ -300,18 +313,50 @@ $(function(){
         },
         hide_column: function(e) {
             var $element = $(e.currentTarget);
-            var col_class = $element.parent().parent().attr('class');
+            var col_class = $element.parent().parent().attr('class').replace('job', '').replace('person', '').replace(/^\s\s*/, '').replace(/\s\s*$/, '');
 
-            this.$('#overview .' + col_class).hide();
-            this.$('.u_hidden').append('<li class="' + col_class + '"><a href="#" class="open">' + col_class + '</a></li>')
+            this.$('#overview .' + col_class).addClass('hidden');
+            this.$('.u_hidden .' + col_class).removeClass('hidden');
+
+            this.check_hidden();
         },
         show_column: function(e) {
             e.preventDefault();
             var $element = $(e.currentTarget);
-            var col_class = $element.parent().attr('class');
+            var col_class = $element.parent().attr('class').replace('job', '').replace('person', '').replace(/^\s\s*/, '').replace(/\s\s*$/, '');
 
-            this.$('#overview .' + col_class).show();
-            $element.parent().hide();
+            this.$('#overview .' + col_class).removeClass('hidden');
+            this.$('.u_hidden .' + col_class).addClass('hidden');
+
+            this.check_hidden();
+        },
+        toggle: function(e, c) {
+            var $element = $(e.currentTarget);
+
+            if ($element.is(":checked")) {
+                this.$('#overview .' + c).removeClass('hidden');
+                this.$('.u_hidden .' + c).addClass('hidden');
+            } else {
+                this.$('#overview .' + c).addClass('hidden');
+                this.$('.u_hidden .' + c).removeClass('hidden');
+            }
+            return this.check_hidden();
+        },
+        toggle_jobs: function(e) {
+            this.toggle(e, 'job');
+        },
+        toggle_people: function(e) {
+            this.toggle(e, 'person');
+        },
+        check_hidden: function() {
+            var $u_hidden = this.$('.u_hidden');
+            $u_hidden.removeClass('hidden');
+            console.log($u_hidden.find('li').length);
+            console.log($u_hidden.find('li.hidden').length + 1);
+            if ($u_hidden.find('li').length == $u_hidden.find('li.hidden').length + 1) {
+                $u_hidden.addClass('hidden');
+            }
+            return this;
         }
     });
 
