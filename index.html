@@ -32,7 +32,8 @@
                 <h4><a href="#job" class="unstyled">#job</a></h4>
                 <ul id="all_jobs" class="list-unstyled"></ul>
                 <!-- <h4><a href="#event" class="unstyled">#event</a></h4> -->
-                <button id="show_events" class="btn btn-default btn-small">All Events</button>
+                <p><button id="show_events" class="btn btn-default btn-small">All Events</button></p>
+                <p><button id="show_overview" class="btn btn-default btn-small">Overview</button></p>
             </div>
         </div>
     </div>
@@ -40,6 +41,31 @@
     <!-- -- -- -- -- -->
     <!--  Javascript -->
     <!-- -- -- -- -- -->
+    <script type="text/javascript">
+        // GLOBAL vars
+        var requirements_list = {
+            "r": {
+                "text": "Required",
+                "label": "danger",
+                "description": "Attendance is mandatory"
+            },
+            "o": {
+                "text": "Optional",
+                "label": "warning",
+                "description": "Attendance is optional"
+            },
+            "s": {
+                "text": "Partial",
+                "label": "info",
+                "description": "Stay as long as content is relavent"
+            },
+            "rc": {
+                "text": "Possible",
+                "label": "info",
+                "description": "May not need to stay for content"
+            }
+        };
+    </script>
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script type="text/javascript" src="js/underscore-min.js"></script>
     <script type="text/javascript" src="js/backbone-min.js"></script>
@@ -169,6 +195,32 @@
     </script>
     <script type="text/template" id="overview-template">
         <h2>Overview</h2>
+        <ul class="u_hidden list-inline">
+            <li><h5>Hidden people:</h5></li>
+        </ul>
+        <table class="table" id="overview">
+            <tr class="username">
+                <th></th>
+                <% _.each(usernames, function(p) { %>
+                    <th class="<%- p %>"><span class="rotate"><a href="#person/<%- p %>"><%- p %></a><span class="close">x</span></span></th>
+                <% }); %>
+            </tr>
+            <tr>
+            <% _.each(events, function(d, d_i) { %>
+                <tr class="day"><td><h4><%- new moment(d[0].time.start).format('dddd') %></h4></td></tr>
+                <% _.each(d, function(e) { %>
+                    <th class="event-name "><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></th>
+                        <% _.each(e.p_data, function(u, u_i) { %>
+                            <td class="<%- usernames[u_i] %><% if (u) { %> text-<%- requirements_list[u].label %><% }; %>">
+                                <% if (u) { %><span class="tooltip-trigger" data-toggle="tooltip" data-container="body" title="<%- requirements_list[u].description %>"><%- u %></span><% }; %></td>
+                        <% }); %>
+                    </tr>
+                    <tr>
+                <% }); %>
+                </tr>
+                <tr class="first-of-day">
+            <% }); %>
+        </table>
     </script>
 
 </body>

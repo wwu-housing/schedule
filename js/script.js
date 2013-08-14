@@ -130,6 +130,8 @@ $(function(){
                     var height = (new Date(single_e.time.end).getTime() - new Date(single_e.time.start).getTime()) / (1000 * 60 * 15); // min-height in em's, 1 em to 15 minutes
                     single_e['height'] = height;
                     this.e_data.push(single_e);
+                } else {
+                    console.log("Event " + e.id + " was not found.");
                 }
             }, this);
             this.e_data = _.groupBy(_.sortBy(this.e_data, function(e) {
@@ -173,7 +175,7 @@ $(function(){
             _.each(this.jobs, function(j) {
                 // look at each event
                 _.each(j.get('events'), function(j_e) {
-                    // add the event to the person's list if it's not their (person event takes precidence)
+                    // add the event to the person's list if it's not there (person event takes precidence)
                     if (!_.find(this.events_, function(p_e) {
                         return p_e.id == j_e.id;
                     })) {
@@ -236,9 +238,80 @@ $(function(){
             this.listenTo(all_people, 'all', this.render());
             this.listenTo(all_jobs, 'all', this.render());
         },
+        events: {
+            'click .close': 'hide_column',
+            'click .u_hidden .open': 'show_column'
+        },
+        generate_data: function() {
+            // NOTE: if this data ever is dynamically changed, a flag will
+            // need to be set to regenerate data when all_* changes.
+            if (!this.data) {
+                this.data = {};
+                // get all event data
+                this.data['events'] = all_events.toJSON();
+                // for each event...
+                _.each(this.data.events, function(e, e_i) {
+                    // put event data for each person in it...
+                    e_p = all_people.map(function(p) {
+                        var test = _.findWhere(p.toJSON().events, { id: e_i });
+                        if (test) {
+                            return test.requirement;
+                        } else {
+                            return '';
+                        }
+                    });
+                    e['p_data'] = e_p;
+                    // for each person...
+                    _.each(e.p_data, function(p, p_i, p_list) {
+                        // get the person's username
+                        var username = all_people.at(p_i).get('username');
+
+                        // from the collection of jobs, find any for this person
+                        var jobs = _.filter(all_jobs.models, function(j) {
+                            var j_people = j.get('people');
+                            return _.contains(j.get('people'), username);
+                        }, this);
+
+                        // for each job this person is in...
+                        _.each(jobs, function(j) {
+                            // reduce the job to just the event we need to know about if it's there
+                            j = _.findWhere(j.toJSON().events, {id: e_i});
+                            if (j) {
+                                if (p == '') {
+                                    p_list[p_i] = j.requirement;
+                                }
+                            }
+                        }, this);
+                    });
+                });
+                this.data.events = _.groupBy(_.sortBy(this.data.events, function(e) {
+                    return e.time.start;
+                }), function(e) {
+                    return new Date(e.time.start).getDate();
+                });
+                this.data['usernames'] = all_people.pluck('username');
+            }
+            return this.data;
+        },
         render: function() {
-            this.$el.html(this.template({'nope': 'fail'}));
+            this.$el.html(this.template(this.generate_data()));
+            this.$('.day').first().addClass('day-first');
             return this;
+        },
+        hide_column: function(e) {
+            var $element = $(e.currentTarget);
+            var col_class = $element.parent().parent().attr('class');
+
+            this.$('#overview .' + col_class).hide();
+            this.$('.u_hidden').append('<li class="' + col_class + '"><a href="#" class="open">' + col_class + '</a></li>')
+        },
+        show_column: function(e) {
+            e.preventDefault();
+            var $element = $(e.currentTarget);
+            var col_class = $element.parent().attr('class');
+
+            this.$('#overview .' + col_class).show();
+            $element.parent().hide();
         }
     });
 
@@ -246,10 +319,10 @@ $(function(){
     var EmptyState = Backbone.View.extend({
         render: function() {
             data = location.hash.split('/');
-            if (data.length = 2) {
+            if (data.length == 2) {
                 this.$el.html("<h3>Can't find the <a href='" + data[0] + "'>" + data[0] + "</a> " + data[1].replace('-', ' ') + ".</h3>");
             } else {
-                this.$el.html("<h3>Only emptyness here</h3>");
+                this.$el.html("<h3>Only emptiness here</h3>");
             }
             return this;
         }
@@ -276,7 +349,12 @@ $(function(){
             "event/:id":        "one_event",
             "event/:id/":       "remove_slash",
             "job/:title":       "one_job",
-            "job/:title/":      "remove_slash"
+            "job/:title/":      "remove_slash",
+            "":                 "index",
+            "*anything":        "empty",
+        },
+        index: function() {
+            this.navigate('job', {trigger: true});
         },
         overview: function() {
             this.swapView(new OverView());
@@ -313,40 +391,19 @@ $(function(){
         swapDetailView: function(collection, view, attrs) {
             var m = collection.findWhere(attrs);
             if (m) {
-                this.swapView(new view({
-                    model: m
-                }));
+                this.swapView(new view({ model: m }));
             } else {
                 this.swapView(new EmptyState({'view': view}));
             }
+        },
+        empty: function() {
+            this.swapView(new EmptyState());
         }
     });
 
     /*------------------------------------------*
      |   Global Vars, Collections, and Router   |
      *------------------------------------------*/
-    var requirements_list = {
-        "r": {
-            "text": "Required",
-            "label": "danger",
-            "description": "Attendance is mandatory"
-        },
-        "o": {
-            "text": "Optional",
-            "label": "warning",
-            "description": "Attendance is optional"
-        },
-        "s": {
-            "text": "Partial",
-            "label": "info",
-            "description": "Stay as long as content is relavent"
-        },
-        "rc": {
-            "text": "Possible",
-            "label": "info",
-            "description": "May not need to stay for content"
-        }
-    };
     var all_events = new Events;
     var all_jobs = new Jobs;
     var all_people = new People;
