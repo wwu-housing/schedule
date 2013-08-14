@@ -93,9 +93,9 @@
     </script>
     <script type="text/template" id="detail-event-template">
         <h3><%- name %></h3>
-        <p><%- new moment(time.start).format("dddd, MMM Do h:mm a") %>
-        <% if (time.end) { %> to <%- new moment(time.end).format("dddd, MMM Do h:mm a") %><% } %>
-        <% if (place) { %> at <%- place %><% } %></p>
+        <p class="lead"><%- new moment(time.start).format("dddd, MMM Do [from] h:mm a") %>
+            <% if (time.end) { %> to <%- new moment(time.end).format("h:mm a") %><% } %></p>
+        <% if (place) { %><p class="lead"><%- place %></p><% } %>
         <p><%- description %></p>
     </script>
     <script type="text/template" id="detail-person-template">
@@ -108,9 +108,8 @@
                         <% _.each(d, function(e) { %>
                             <li class="event border-<%- e.req.label %>" style="min-height: <%- e.height %>em;">
                                 <span class="tooltip-trigger label pull-right label-<%- e.req.label %>" data-toggle="tooltip" data-placement="left" title="<%- e.req.description %>"><%- e.req.text %></span>
-                                <h4><%- e.name %></h4>
-                                <p><% if (e.place) { %><%- e.place %>, <% } %>
-                                <%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %></p>
+                                <h4><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></h4>
+                                <p><%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %><% if (e.place) { %>, <%- e.place %><% } %></p>
                             </li>
                         <% }); %>
                     </ul>
@@ -133,9 +132,8 @@
                         <% _.each(d, function(e) { %>
                             <li class="event border-<%- e.req.label %>" style="min-height: <%- e.height %>em;">
                                 <span class="tooltip-trigger label pull-right label-<%- e.req.label %>" data-toggle="tooltip" data-placement="left" title="<%- e.req.description %>"><%- e.req.text %></span>
-                                <h4><%- e.name %></h4>
-                                <p><% if (e.place) { %><%- e.place %>, <% } %>
-                                <%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %></p>
+                                <h4><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></h4>
+                                <p><%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %><% if (e.place) { %>, <%- e.place %><% } %></p>
                                 <% if (e.description) { %>
                                     <p><%- e.description %></p>
                                 <% } %>
@@ -158,9 +156,8 @@
                     <ul class="list-unstyled">
                         <% _.each(d, function(e) { %>
                             <li class="event" style="min-height: <%- (new Date(e.time.end).getTime() - new Date(e.time.start).getTime()) / (1000 * 60 * 15) %>em;">
-                                <h4><small><a href="#event/<%- e.id %>" title="<%- e.id %>">#</a></small> <%- e.name %></h4>
-                                <p><% if (e.place) { %><%- e.place %>, <% } %>
-                                <%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %></p>
+                                <h4><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></h4>
+                                <p><%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %><% if (e.place) { %>, <%- e.place %><% } %></p>
                             </li>
                         <% }); %>
                     </ul>
