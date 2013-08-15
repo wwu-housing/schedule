@@ -24,6 +24,8 @@ The data for this app comes from three json files located in the `json/` directo
 
 An array of events. Each event looks like the following.
 
+::
+
     {
         "id": 0, // A unique numerical id
         "name": "Event Name",
@@ -34,11 +36,13 @@ An array of events. Each event looks like the following.
         "place": "Location",
         "description": "A description of the event"
     }
-    
+
 ``people.json``
 ***************
 
 An array of people. Each person looks like the following.
+
+::
 
     {
         "id": 0, // A unique numerical id
@@ -55,11 +59,13 @@ An array of people. Each person looks like the following.
             }
         ]
     }
-    
+
 ``jobs.json``
 *************
 
 An array of jobs. Each job looks like the following.
+
+::
 
     {
         "id": 0, // A unique numerical id
@@ -67,11 +73,13 @@ An array of jobs. Each job looks like the following.
         "people": ["person1", "apexskier"], // an array of usernames
         "events": [] // same as events for people
     }
-    
+
 Requirements
 ************
 
 The list of requirements is specified within the ``index.html`` file. Each requirement looks like the following.
+
+::
 
     "key": { // a unique key for the requirement
         "text": "Name", // the short text term
