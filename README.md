@@ -8,7 +8,7 @@ The following libraries are included and used in this tool.
 
 * [Backbone.js](http://backbonejs.org/)
 * [Bootstrap.js](http://getbootstrap.com)
-* [Moment.jsr] (http://momentjs.com/)
+* [Moment.js] (http://momentjs.com/)
 * [jQuery](http://jquery.com/)
 
 ## Data
