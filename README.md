@@ -25,7 +25,7 @@ An array of events. Each event looks like the following.
     "name": "Event Name",
     "time": {
         "start": "2013-09-18T09:00:00", // ISO formatted datetime
-        "end": "2013-09-18T10:30:00     // ISO formatted datetime
+        "end": "2013-09-18T10:30:00"    // ISO formatted datetime
     },
     "place": "Location",
     "description": "A description of the event"
@@ -40,7 +40,7 @@ An array of people. Each person looks like the following.
 {
     "id": 0, // A unique numerical id
     "name": "Cameron Little", // Person's name
-    "username": "apexskier", // The person's unique username
+    "username": "apexskier",  // The person's unique username
     "events": [ // an array of mini event objects, min length is 0
         {
             "id": 0, // id of an event
