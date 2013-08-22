@@ -248,6 +248,10 @@
             {
                 "id": 0,
                 "requirement": "r"
+            },
+            {
+                "id": 26,
+                "requirement": "o"
             }
         ]
     },
