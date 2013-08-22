@@ -210,11 +210,26 @@ $(function(){
 
             // get events for this job
             this.get_e_data(this.events_);
+
+            // calculate total and required hours
+            this.total_hours = new moment.duration(0);
+            this.required_hours = new moment.duration(0);
+            _.each(this.e_data, function(d) {
+                _.each(d, function(e) {
+                    var duration = new moment(e.time.end) - new moment(e.time.start);
+                    this.total_hours.add(duration);
+                    if (e.req.label == "danger") {
+                        this.required_hours.add(duration);
+                    }
+                }, this);
+            }, this);
         },
         render: function() {
             var json = this.model.toJSON();
             // pass event and job data into this template as well as model data
             json['e_data'] = this.e_data;
+            json['total_hours'] = this.total_hours;
+            json['required_hours'] = this.required_hours;
             json['jobs'] = _.without(this.jobs.map(function(j) {
                 return j.get('title_sanitized');
             }), 'all-staff');
