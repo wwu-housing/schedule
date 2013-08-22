@@ -117,7 +117,7 @@
     </script>
     <script type="text/template" id="detail-person-template">
         <h2><%- name %> <small><% _.each(jobs, function(j) { %><a href="#job/<%- j %>">#<%- j.replace('-', ' ') %></a> <% }) %></span></small></h2>
-    <p><small><%- Math.round(total_hours.asHours() * 100) / 100 %> hours total, <%- Math.round(required_hours.asHours() * 100) / 100 %> required</small></p>
+        <p class="text-muted"><small><%- Math.round(total_hours.asHours() * 100) / 100 %> hours total, <%- Math.round(required_hours.asHours() * 100) / 100 %> required</small></p>
         <ul id="events" class="list-unstyled">
             <% _.each(e_data, function(d) { %>
                 <li class="day list-unstyled">
