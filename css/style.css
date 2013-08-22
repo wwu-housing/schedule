@@ -5,6 +5,9 @@ h2 {
 .navbar {
     margin-bottom: 10px;
 }
+.navbar .navbar-btn {
+    margin-right: 15px;
+}
 @media (min-width: 768px) {
     .navbar-header {
         padding-left: 0;
@@ -37,6 +40,9 @@ h2 {
     left: -0.25em;
 }
 
+.u_hidden h5 {
+    margin-bottom: 0;
+}
 #overview_container {
     overflow-x: scroll;
     -webkit-overflow-scrolling: touch;

@@ -41,10 +41,12 @@ $(function(){
      *-----------*/
     // container view
     var AppView = Backbone.View.extend({
-        el: $("#main"),
+        el: $("body"),
         events: {
             "click #show_events": "show_events",
-            "click #show_overview": "show_overview"
+            "click #show_overview": "show_overview",
+            "click #to_nav": "scroll_down",
+            "click #to_top": "scroll_up",
         },
         initialize: function() {
             this.listenTo(all_jobs, 'add', this.addJob);
@@ -83,6 +85,21 @@ $(function(){
         },
         show_overview: function() {
             appRouter.navigate("overview", {trigger: true});
+        },
+        scroll_down: function() {
+            // scroll to the sidebar
+            var target = this.$('#side').position().top - 10;
+            var duration = (target - this.$el.scrollTop()) * 0.3;
+            console.log(duration);
+            this.$el.animate({
+                scrollTop: target
+            }, duration);
+        },
+        scroll_up: function() {
+            var duration = this.$el.scrollTop() * 0.4;
+            this.$el.animate({
+                scrollTop: 0
+            }, duration);
         }
     });
 
@@ -207,6 +224,43 @@ $(function(){
     });
     var EventView = DetailView.extend({
         template: _.template($('#detail-event-template').html()),
+        initialize: function() {
+            this.listenTo(this.model, 'change', this.render);
+            this.listenTo(this.model, 'destroy', this.remove);
+
+            this.people = new People(all_people.toJSON()); // .clone() still holds references to the original models
+            all_people.each(function(p) {
+                var p_e = _.findWhere(p.get('events'), {'id': this.model.id})
+                if (p_e) {
+                    p_e = p_e.requirement;
+                    this.people.get(p.id).set('requirement', p_e);
+                }
+            }, this);
+            all_jobs.each(function(j) {
+                var j_e = _.findWhere(j.get('events'), {'id': this.model.id})
+                if (j_e) {
+                    j_e = j_e.requirement;
+                    _.each(j.get('people'), function(p) {
+                        var this_p = this.people.findWhere({'username': p});
+                        if (!this_p.get('requirement')) {
+                            this_p.set('requirement', j_e);
+                        }
+                    }, this);
+                }
+            }, this);
+            this.people = this.people.filter(function(p) {
+                return p.get('requirement');
+            });
+            this.people = _.map(this.people, function(p) {
+                return p.toJSON();
+            });
+        },
+        render: function() {
+            var json = this.model.toJSON();
+            json['people'] = this.people;
+            this.$el.html(this.template(json));
+            return this;
+        },
     });
 
     // all of a type views (broad)
@@ -216,7 +270,6 @@ $(function(){
             this.listenTo(this.collection, 'all', this.render());
         },
         render: function() {
-            // console.log(this.collection.toJSON());
             this.$el.html(this.template({ 'things': this.collection.toJSON() }));
             return this;
         }
@@ -455,6 +508,13 @@ $(function(){
             this.currentView = view;
             // put the new view's content into the #content element after it's rendered
             $('#content').html(this.currentView.render().el);
+
+            // scroll to the top of the page
+            var duration = $('body').scrollTop() * 0.6;
+            $('body').animate({
+                scrollTop: 0
+            }, duration);
+
             // any new elements need their tooltips started
             $('.tooltip-trigger').tooltip();
         },
@@ -494,6 +554,12 @@ $(function(){
 
         // Start router and navigation
         Backbone.history.start();
+    });
+    // identify scrolling as a user action and stops the animation
+    $(document).on("scroll mousedown DOMMouseScroll mousewheel keyup", function(e){
+        if ( e.which > 0 || e.type === "mousedown" || e.type === "mousewheel") {
+             $(document).stop();
+        }
     });
 
 });
