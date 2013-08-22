@@ -245,7 +245,7 @@
                     <% _.each(d, function(e) { %>
                         <th class="event-name"><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></th>
                             <% _.each(e.j_data, function(j, j_i) { %>
-                                <td class="<%- titles[j_i] %><% if (j) { %> text-<%- requirements_list[j].label %><% }; %> job"><% if (j) { %><span class="tooltip-trigger" data-toggle="tooltip" data-container="body" title="<%- requirements_list[j].description %>"><%- j %></span><% }; %></td>
+                                <td class="<%- titles[j_i] %> job"><% if (j) { %><span class="tooltip-trigger<% if (j) { %> label label-<%- requirements_list[j].label %><% }; %>" data-toggle="tooltip" data-container="body" title="<%- requirements_list[j].description %>"><%- j %></span><% }; %></td>
                             <% }); %>
                             <% _.each(e.p_data, function(u, u_i) { %>
                                 <td class="<%- usernames[u_i] %> hidden <% if (u) { %> text-<%- requirements_list[u].label %><% }; %> person"><% if (u) { %><span class="tooltip-trigger" data-toggle="tooltip" data-container="body" title="<%- requirements_list[u].description %>"><%- u %></span><% }; %></td>
