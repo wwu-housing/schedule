@@ -105,8 +105,8 @@
     </script>
     <script type="text/template" id="detail-event-template">
         <h3><%- name %></h3>
-        <p><%- new moment(time.start).format("dddd, MMM Do [from] h:mm a") %>
-            <% if (time.end) { %> to <%- new moment(time.end).format("h:mm a") %><% } %></p>
+        <p><%- time.start.format("dddd, MMM Do [from] h:mm a") %>
+            <% if (time.end) { %> to <%- time.end.format("h:mm a") %><% } %></p>
         <% if (place) { %><p><%- place %></p><% } %>
         <% if (description) { %><p><%- description %></p><% } %>
         <ul class="list-inline">
@@ -173,7 +173,7 @@
                     <h3 class="day-of-week"><%- new moment(d[0].time.start).format('dddd, MMM Do') %></h3>
                     <ul class="list-unstyled">
                         <% _.each(d, function(e) { %>
-                            <li class="event" style="min-height: <%- (new Date(e.time.end).getTime() - new Date(e.time.start).getTime()) / (1000 * 60 * 15) %>em;">
+                            <li class="event" style="min-height: <%- (e.time.end - e.time.start) / (1000 * 60 * 15) %>em;">
                                 <h4><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></h4>
                                 <p><%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %><% if (e.place) { %>, <%- e.place %><% } %></p>
                             </li>

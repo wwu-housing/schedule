@@ -1,6 +1,6 @@
-id,name,time-start,time-end,place,description
+id,name,time-start,time-end,place,description,
 0,Welcome,9/18/13 9:00 AM,9/18/13 10:30 AM,CF 314,
-1,Prep for Intern Training,9/18/13 10:30 AM,9/18/13 12:00 PM,CF 314,
+1,Prep for Intern Training,9/18/13 10:30 AM,9/18/13 12:00 PM,CF 314,"this is a test description"
 3,Lunch,9/18/13 12:00 PM,9/18/13 1:00 PM,Fairhaven Commons,
 2,Group Meeting - Schedule,9/18/13 10:30 AM,9/18/13 12:00 PM,Dojo,
 4,"Teach you, Teach me prep",9/18/13 1:30 PM,9/18/13 4:30 PM,CF 314,

@@ -18,7 +18,7 @@ $(function(){
             return _.groupBy(collection, function(e) {
                 return e.time.start.isoWeekday();
             });
-        }
+        },
     }
 
     /*------------*
@@ -35,74 +35,7 @@ $(function(){
     /*-----------------*
      |   Collections   |
      *-----------------*/
-    var Jobs = Backbone.Collection.extend({
-        url: "json/jobs.json",
-        model: Job,
-        comparator: function(e) {
-            return e.get('title_sanitized');
-        }
-    });
-    var People = Backbone.Collection.extend({
-        url: "json/people.json",
-        model: Person,
-        comparator: function(e) {
-            return e.get('name');
-        }
-    });
-    var Events = Backbone.Collection.extend({
-        url: "csv/events.csv",
-        model: Event,
-        comparator: function(e) {
-            return e.get('time').start.valueOf();
-        },
-        parse: function(response) {
-            var json = [];
-            var lines = response.split('\n');
-            var keys = lines.shift().split(',');
-            _.each(lines, function(line) {
-                var object = {};
-                var line_array = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-                if (line_array) {
-                    _.each(keys, function(key, i) {
-                        // the key indicates that it's supposed to be nested
-                        if (key.indexOf('-') > 0) {
-                            // split the key into it's levels
-                            var key_p = key.split('-');
-                            // find how deep it goes
-                            var depth = key_p.length - 1;
-                            // save a reference to the level we're on.
-                            var level_on = object;
-                            // convert date to a moment object
-                            var val = line_array[i];
-                            if (key.indexOf("time") < 1) {
-                                val = new moment(val);
-                            }
-                            // loop through levels
-                            _.each(key_p, function(key_l, key_i) {
-                                // if we're at the bottom, set it to the csv value
-                                if (key_i == depth) {
-                                    level_on = level_on[key_l] = val;
-                                } else { // otherwise, move down the tree
-                                    level_on = level_on[key_l] = level_on[key_l] || {};
-                                }
-                            });
-                        } else {
-                            if (new RegExp(/(".*?")/g).test(line_array[i])) {
-                                line_array[i] = line_array[i].substring(1, line_array[i].length - 1);
-                            }
-                            var val = line_array[i];
-                            if (key == "id") {
-                                val = +val;
-                            }
-                            object[key] = val;
-                        }
-                    });
-                    json.push(object);
-                }
-            });
-
-            return json;
-        },
+    var CSVCollection = Backbone.Collection.extend({
         sync: function(method, model, options) {
             var type = methodMap[method];
 
@@ -129,7 +62,108 @@ $(function(){
             var xhr = options.xhr = Backbone.ajax(_.extend(params, options));
             model.trigger('request', model, xhr, options);
             return xhr;
+        },
+        parse: function(response) {
+            var json = [];
+            var lines = response.split('\n');
+            var keys = lines.shift().split(',');
+            _.each(lines, function(line) {
+                var line_array = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+                if (line_array) {
+                    var object = {};
+                    _.each(keys, function(key, i) {
+                        // the key indicates that it's supposed to be nested
+                        if (key.indexOf('-') > 0) {
+                            // split the key into it's levels
+                            var key_p = key.split('-');
+                            // find how deep it goes
+                            var depth = key_p.length - 1;
+                            // save a reference to the level we're on.
+                            var level_on = object;
+                            // convert date to a moment object
+                            var val = line_array[i];
+                            if (key.indexOf("time") < 1) {
+                                val = new moment(val);
+                            }
+                            // loop through levels
+                            _.each(key_p, function(key_l, key_i) {
+                                // if we're at the bottom, set it to the csv value
+                                if (key_i == depth) {
+                                    level_on = level_on[key_l] = val;
+                                } else { // otherwise, move down the tree
+                                    level_on = level_on[key_l] = level_on[key_l] || {};
+                                }
+                            });
+                        } else {
+                            // remove surrounding quotes from strings with them
+                            if (new RegExp(/(".*?")/g).test(line_array[i])) {
+                                line_array[i] = line_array[i].substring(1, line_array[i].length - 1);
+                            }
+                            var val = line_array[i];
+                            // special cases
+                            switch (key) {
+                                case "id": // convert ids to numbers
+                                    val = +val;
+                                    break;
+                                case "events": // parse events (sytax: "id:code, id:code")
+                                    if (val) {
+                                        // split into array by comma
+                                        var events = val.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+                                        // convert to array of objects with id and requirement
+                                        events = _.map(events, function(e) {
+                                            var ret = {};
+                                            var event_data = e.split(":");
+                                            ret['id'] = +event_data[0];
+                                            ret['requirement'] = event_data[1];
+                                            return ret;
+                                        });
+                                    }
+                                    // reject values with null requirements (can happen if there's an extra comma at the end of the events string)
+                                    events = _.reject(events, function(e) {
+                                        return !(e.requirement && e.requirement.replace(/^\s\s*/, '').replace(/\s\s*$/, ''));
+                                    });
+                                    val = events;
+                                    break;
+                                case "people":
+                                    // create array of people
+                                    val = val.split(' ');
+                                    val = _.reject(val, function(e) {
+                                        return !(e.replace(/^\s\s*/, '').replace(/\s\s*$/, ''));
+                                    });
+                                    console.log(val);
+                                    break;
+                                default:
+                                    ;
+                            }
+                            object[key] = val;
+                        }
+                    });
+                    json.push(object);
+                }
+            });
+            return json;
         }
+    });
+    var Jobs = CSVCollection.extend({
+        url: "csv/jobs.csv",
+        model: Job,
+        comparator: function(e) {
+            return e.get('title_sanitized');
+        },
+    });
+    var People = CSVCollection.extend({
+        url: "csv/people.csv",
+        model: Person,
+        comparator: function(e) {
+            return e.get('name');
+        },
+    });
+    var Events = CSVCollection.extend({
+        url: "csv/events.csv",
+        model: Event,
+        comparator: function(e) {
+            return e.get('time').start.valueOf();
+        },
     });
 
     /*-----------*
@@ -245,7 +279,7 @@ $(function(){
                     // get the full requirement data
                     single_e['req'] = requirements_list[e.requirement];
                     // compute the height
-                    var height = (new Date(single_e.time.end).getTime() - new Date(single_e.time.start).getTime()) / (1000 * 60 * 15); // min-height in em's, 1 em to 15 minutes
+                    var height = (single_e.time.end - single_e.time.start) / (1000 * 60 * 15); // min-height in em's, 1 em to 15 minutes
                     single_e['height'] = height;
                     this.e_data.push(single_e);
                 } else {
@@ -286,7 +320,7 @@ $(function(){
             }, this);
 
             // get events for this person
-            this.events_ = this.model.get('events');
+            this.events_ = this.model.get('events') || [];
             // for their job(s)...
             _.each(this.jobs, function(j) {
                 // look at each event
