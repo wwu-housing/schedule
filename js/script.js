@@ -1,5 +1,26 @@
 $(function(){
 
+    var methodMap = {
+        'create': 'POST',
+        'update': 'PUT',
+        'patch': 'PATCH',
+        'delete': 'DELETE',
+        'read': 'GET'
+    };
+
+    Backbone.emulateJSON = true;
+
+    /*----------------------*
+     *   Helper Functions   |
+     *----------------------*/
+    var utils = {
+        groupByDay: function(collection) {
+            return _.groupBy(collection, function(e) {
+                return e.time.start.isoWeekday();
+            });
+        }
+    }
+
     /*------------*
      |   Models   |
      *------------*/
@@ -29,10 +50,85 @@ $(function(){
         }
     });
     var Events = Backbone.Collection.extend({
-        url: "json/events.json",
+        url: "csv/events.csv",
         model: Event,
         comparator: function(e) {
-            return e.get('time');
+            return e.get('time').start.valueOf();
+        },
+        parse: function(response) {
+            var json = [];
+            var lines = response.split('\n');
+            var keys = lines.shift().split(',');
+            _.each(lines, function(line) {
+                var object = {};
+                var line_array = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+                if (line_array) {
+                    _.each(keys, function(key, i) {
+                        // the key indicates that it's supposed to be nested
+                        if (key.indexOf('-') > 0) {
+                            // split the key into it's levels
+                            var key_p = key.split('-');
+                            // find how deep it goes
+                            var depth = key_p.length - 1;
+                            // save a reference to the level we're on.
+                            var level_on = object;
+                            // convert date to a moment object
+                            var val = line_array[i];
+                            if (key.indexOf("time") < 1) {
+                                val = new moment(val);
+                            }
+                            // loop through levels
+                            _.each(key_p, function(key_l, key_i) {
+                                // if we're at the bottom, set it to the csv value
+                                if (key_i == depth) {
+                                    level_on = level_on[key_l] = val;
+                                } else { // otherwise, move down the tree
+                                    level_on = level_on[key_l] = level_on[key_l] || {};
+                                }
+                            });
+                        } else {
+                            if (new RegExp(/(".*?")/g).test(line_array[i])) {
+                                line_array[i] = line_array[i].substring(1, line_array[i].length - 1);
+                            }
+                            var val = line_array[i];
+                            if (key == "id") {
+                                val = +val;
+                            }
+                            object[key] = val;
+                        }
+                    });
+                    json.push(object);
+                }
+            });
+
+            return json;
+        },
+        sync: function(method, model, options) {
+            var type = methodMap[method];
+
+            // Default options, unless specified.
+            _.defaults(options || (options = {}), {
+                emulateHTTP: Backbone.emulateHTTP,
+                emulateJSON: Backbone.emulateJSON
+            });
+
+            // Default JSON-request options.
+            var params = {type: type};
+
+            // Ensure that we have a URL.
+            if (!options.url) {
+                params.url = _.result(model, 'url') || urlError();
+            }
+
+            // Don't process data on a non-GET request.
+            if (params.type !== 'GET' && !options.emulateJSON) {
+                params.processData = false;
+            }
+
+            // Make the request, allowing the user to override any Ajax options.
+            var xhr = options.xhr = Backbone.ajax(_.extend(params, options));
+            model.trigger('request', model, xhr, options);
+            return xhr;
         }
     });
 
@@ -157,11 +253,7 @@ $(function(){
                 }
             }, this);
             // group by day
-            this.e_data = _.groupBy(_.sortBy(this.e_data, function(e) {
-                return e.time.start;
-            }), function(e) {
-                return new Date(e.time.start).getDate();
-            });
+            this.e_data = utils.groupByDay(this.e_data);
         }
     });
     var JobView = HasEventDetailView.extend({
@@ -292,9 +384,7 @@ $(function(){
     var AllEventsView = AllTypeView.extend({
         template: _.template($('#all-events-template').html()),
         render: function() {
-            var days = _.groupBy(this.collection.toJSON(), function(e) {
-                return new Date(e.time.start).getDate();
-            });
+            var days = utils.groupByDay(this.collection.toJSON());
             var json = { 'events': days };
             this.$el.html(this.template(json));
             return this;
@@ -377,11 +467,7 @@ $(function(){
                     e['j_data'] = e_j;
                 });
                 // group events by day
-                this.data.events = _.groupBy(_.sortBy(this.data.events, function(e) {
-                    return e.time.start;
-                }), function(e) {
-                    return new Date(e.time.start).getDate();
-                });
+                this.data.events = utils.groupByDay(this.data.events);
                 // get usernames and titles
                 this.data['usernames'] = all_people.pluck('username');
                 this.data['titles'] = all_jobs.pluck('title_sanitized');
