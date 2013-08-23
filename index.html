@@ -228,40 +228,38 @@
             <% }); %>
         </ul>
         <div id="overview_container">
-            <div class="table-responsive">
-                <table class="table table-bordered" id="overview">
-                    <thead id="overview_head">
-                        <tr class="username">
-                            <th></th>
-                            <% _.each(titles, function(j) { %>
-                                <th class="<%- j %> job"><span class="rotate"><a href="#job/<%- j %>"><%- j.replace('-', ' ') %></a><span class="close">x</span></span></th>
-                            <% }); %>
-                            <% _.each(usernames, function(p) { %>
-                                <th class="<%- p %> hidden person"><span class="rotate"><a href="#person/<%- p %>"><%- p %></a><span class="close">x</span></span></th>
-                            <% }); %>
-                        </tr>
-                    </thead>
-                    <tbody class="text-center">
-                        <tr>
-                        <% _.each(events, function(d, d_i) { %>
-                            <tr class="day"><td><h4><%- new moment(d[0].time.start).format('dddd') %></h4></td></tr>
-                            <% _.each(d, function(e) { %>
-                                <th class="event-name"><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></th>
-                                    <% _.each(e.j_data, function(j, j_i) { %>
-                                        <td class="<%- titles[j_i] %> job"><% if (j) { %><span class="tooltip-trigger<% if (j) { %> label label-<%- requirements_list[j].label %><% }; %>" data-toggle="tooltip" data-container="body" title="<%- requirements_list[j].description %>"><%- j %></span><% }; %></td>
-                                    <% }); %>
-                                    <% _.each(e.p_data, function(u, u_i) { %>
-                                        <td class="<%- usernames[u_i] %> hidden person"><% if (u) { %><span class="tooltip-trigger<% if (u) { %> label label-<%- requirements_list[u].label %><% }; %>" data-toggle="tooltip" data-container="body" title="<%- requirements_list[u].description %>"><%- u %></span><% }; %></td>
-                                    <% }); %>
-                                </tr>
-                                <tr>
-                            <% }); %>
-                            </tr>
-                            <tr class="first-of-day">
+            <table class="table table-bordered" id="overview">
+                <thead id="overview_head">
+                    <tr class="username">
+                        <th></th>
+                        <% _.each(titles, function(j) { %>
+                            <th class="<%- j %> job"><span class="rotate"><a href="#job/<%- j %>"><%- j.replace('-', ' ') %></a><span class="close">x</span></span></th>
                         <% }); %>
-                    </tbody>
-                </table>
-            </div>
+                        <% _.each(usernames, function(p) { %>
+                            <th class="<%- p %> hidden person"><span class="rotate"><a href="#person/<%- p %>"><%- p %></a><span class="close">x</span></span></th>
+                        <% }); %>
+                    </tr>
+                </thead>
+                <tbody class="text-center">
+                    <tr>
+                    <% _.each(events, function(d, d_i) { %>
+                        <tr class="day"><td><h4><%- new moment(d[0].time.start).format('dddd') %></h4></td></tr>
+                        <% _.each(d, function(e) { %>
+                            <th class="event-name"><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></th>
+                                <% _.each(e.j_data, function(j, j_i) { %>
+                                    <td class="<%- titles[j_i] %> job"><% if (j) { %><span class="tooltip-trigger<% if (j) { %> label label-<%- requirements_list[j].label %><% }; %>" data-toggle="tooltip" data-container="body" title="<%- requirements_list[j].description %>"><%- j %></span><% }; %></td>
+                                <% }); %>
+                                <% _.each(e.p_data, function(u, u_i) { %>
+                                    <td class="<%- usernames[u_i] %> hidden person"><% if (u) { %><span class="tooltip-trigger<% if (u) { %> label label-<%- requirements_list[u].label %><% }; %>" data-toggle="tooltip" data-container="body" title="<%- requirements_list[u].description %>"><%- u %></span><% }; %></td>
+                                <% }); %>
+                            </tr>
+                            <tr>
+                        <% }); %>
+                        </tr>
+                        <tr class="first-of-day">
+                    <% }); %>
+                </tbody>
+            </table>
         </div>
     </script>
 
