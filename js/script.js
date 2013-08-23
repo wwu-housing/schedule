@@ -10,6 +10,10 @@ $(function(){
 
     Backbone.emulateJSON = true;
 
+    var options = {
+        filetype: "json", // "csv" or "json"
+    }
+
     /*----------------------*
      *   Helper Functions   |
      *----------------------*/
@@ -35,131 +39,152 @@ $(function(){
     /*-----------------*
      |   Collections   |
      *-----------------*/
-    var CSVCollection = Backbone.Collection.extend({
-        sync: function(method, model, options) {
-            var type = methodMap[method];
+    var AppCollection;
+    switch (options.filetype) {
+        case "csv":
+            AppCollection = Backbone.Collection.extend({
+                sync: function(method, model, options) {
+                    var type = methodMap[method];
 
-            // Default options, unless specified.
-            _.defaults(options || (options = {}), {
-                emulateHTTP: Backbone.emulateHTTP,
-                emulateJSON: Backbone.emulateJSON
-            });
+                    // Default options, unless specified.
+                    _.defaults(options || (options = {}), {
+                        emulateHTTP: Backbone.emulateHTTP,
+                        emulateJSON: Backbone.emulateJSON
+                    });
 
-            // Default JSON-request options.
-            var params = {type: type};
+                    // Default JSON-request options.
+                    var params = {type: type};
 
-            // Ensure that we have a URL.
-            if (!options.url) {
-                params.url = _.result(model, 'url') || urlError();
-            }
+                    // Ensure that we have a URL.
+                    if (!options.url) {
+                        params.url = _.result(model, 'url') || urlError();
+                    }
 
-            // Don't process data on a non-GET request.
-            if (params.type !== 'GET' && !options.emulateJSON) {
-                params.processData = false;
-            }
+                    // Don't process data on a non-GET request.
+                    if (params.type !== 'GET' && !options.emulateJSON) {
+                        params.processData = false;
+                    }
 
-            // Make the request, allowing the user to override any Ajax options.
-            var xhr = options.xhr = Backbone.ajax(_.extend(params, options));
-            model.trigger('request', model, xhr, options);
-            return xhr;
-        },
-        parse: function(response) {
-            var json = [];
-            var lines = response.split('\n');
-            var keys = lines.shift().split(',');
-            _.each(lines, function(line) {
-                var line_array = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-                if (line_array) {
-                    var object = {};
-                    _.each(keys, function(key, i) {
-                        // the key indicates that it's supposed to be nested
-                        if (key.indexOf('-') > 0) {
-                            // split the key into it's levels
-                            var key_p = key.split('-');
-                            // find how deep it goes
-                            var depth = key_p.length - 1;
-                            // save a reference to the level we're on.
-                            var level_on = object;
-                            // convert date to a moment object
-                            var val = line_array[i];
-                            if (key.indexOf("time") < 1) {
-                                val = new moment(val);
-                            }
-                            // loop through levels
-                            _.each(key_p, function(key_l, key_i) {
-                                // if we're at the bottom, set it to the csv value
-                                if (key_i == depth) {
-                                    level_on = level_on[key_l] = val;
-                                } else { // otherwise, move down the tree
-                                    level_on = level_on[key_l] = level_on[key_l] || {};
+                    // Make the request, allowing the user to override any Ajax options.
+                    var xhr = options.xhr = Backbone.ajax(_.extend(params, options));
+                    model.trigger('request', model, xhr, options);
+                    return xhr;
+                },
+                parse: function(response) {
+                    var json = [];
+                    var lines = response.split('\n');
+                    var keys = lines.shift().split(',');
+                    _.each(lines, function(line) {
+                        var line_array = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+                        if (line_array) {
+                            var object = {};
+                            _.each(keys, function(key, i) {
+                                // the key indicates that it's supposed to be nested
+                                if (key.indexOf('-') > 0) {
+                                    // split the key into it's levels
+                                    var key_p = key.split('-');
+                                    // find how deep it goes
+                                    var depth = key_p.length - 1;
+                                    // save a reference to the level we're on.
+                                    var level_on = object;
+                                    // convert date to a moment object
+                                    var val = line_array[i];
+                                    if (key.indexOf("time") < 1) {
+                                        val = new moment(val);
+                                    }
+                                    // loop through levels
+                                    _.each(key_p, function(key_l, key_i) {
+                                        // if we're at the bottom, set it to the csv value
+                                        if (key_i == depth) {
+                                            level_on = level_on[key_l] = val;
+                                        } else { // otherwise, move down the tree
+                                            level_on = level_on[key_l] = level_on[key_l] || {};
+                                        }
+                                    });
+                                } else {
+                                    // remove surrounding quotes from strings with them
+                                    if (new RegExp(/(".*?")/g).test(line_array[i])) {
+                                        line_array[i] = line_array[i].substring(1, line_array[i].length - 1);
+                                    }
+                                    var val = line_array[i];
+                                    // special cases
+                                    switch (key) {
+                                        case "id": // convert ids to numbers
+                                            val = +val;
+                                            break;
+                                        case "events": // parse events (sytax: "id:code, id:code")
+                                            if (val) {
+                                                // split into array by comma
+                                                var events = val.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+                                                // convert to array of objects with id and requirement
+                                                events = _.map(events, function(e) {
+                                                    var ret = {};
+                                                    var event_data = e.split(":");
+                                                    ret['id'] = +event_data[0];
+                                                    ret['requirement'] = event_data[1];
+                                                    return ret;
+                                                });
+                                            }
+                                            // reject values with null requirements (can happen if there's an extra comma at the end of the events string)
+                                            events = _.reject(events, function(e) {
+                                                return !(e.requirement && e.requirement.replace(/^\s\s*/, '').replace(/\s\s*$/, ''));
+                                            });
+                                            val = events;
+                                            break;
+                                        case "people":
+                                            // create array of people
+                                            val = val.split(' ');
+                                            val = _.reject(val, function(e) {
+                                                return !(e.replace(/^\s\s*/, '').replace(/\s\s*$/, ''));
+                                            });
+                                            break;
+                                        default:
+                                            ;
+                                    }
+                                    object[key] = val;
                                 }
                             });
-                        } else {
-                            // remove surrounding quotes from strings with them
-                            if (new RegExp(/(".*?")/g).test(line_array[i])) {
-                                line_array[i] = line_array[i].substring(1, line_array[i].length - 1);
-                            }
-                            var val = line_array[i];
-                            // special cases
-                            switch (key) {
-                                case "id": // convert ids to numbers
-                                    val = +val;
-                                    break;
-                                case "events": // parse events (sytax: "id:code, id:code")
-                                    if (val) {
-                                        // split into array by comma
-                                        var events = val.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-                                        // convert to array of objects with id and requirement
-                                        events = _.map(events, function(e) {
-                                            var ret = {};
-                                            var event_data = e.split(":");
-                                            ret['id'] = +event_data[0];
-                                            ret['requirement'] = event_data[1];
-                                            return ret;
-                                        });
-                                    }
-                                    // reject values with null requirements (can happen if there's an extra comma at the end of the events string)
-                                    events = _.reject(events, function(e) {
-                                        return !(e.requirement && e.requirement.replace(/^\s\s*/, '').replace(/\s\s*$/, ''));
-                                    });
-                                    val = events;
-                                    break;
-                                case "people":
-                                    // create array of people
-                                    val = val.split(' ');
-                                    val = _.reject(val, function(e) {
-                                        return !(e.replace(/^\s\s*/, '').replace(/\s\s*$/, ''));
-                                    });
-                                    console.log(val);
-                                    break;
-                                default:
-                                    ;
-                            }
-                            object[key] = val;
+                            json.push(object);
                         }
                     });
-                    json.push(object);
+                    return json;
                 }
             });
-            return json;
-        }
-    });
-    var Jobs = CSVCollection.extend({
-        url: "csv/jobs.csv",
+            break;
+        case "json":
+            AppCollection = Backbone.Collection.extend({
+                parse: function(response) {
+                    _.map(response, function(thing) {
+                        if (thing.time) {
+                            thing.time.start = new moment(thing.time.start);
+                            thing.time.end = new moment(thing.time.end);
+                        }
+                        return thing;
+                    });
+                    return response;
+                }
+            });
+            break;
+        default:
+            alert("You've specified " + options.filetype + " as your filetype. Please change it to csv or json.");
+            break;
+    }
+    var Jobs = AppCollection.extend({
+        url: options.filetype + "/jobs." + options.filetype,
         model: Job,
         comparator: function(e) {
             return e.get('title_sanitized');
         },
     });
-    var People = CSVCollection.extend({
-        url: "csv/people.csv",
+    var People = AppCollection.extend({
+        url: options.filetype + "/people." + options.filetype,
         model: Person,
         comparator: function(e) {
             return e.get('name');
         },
     });
-    var Events = CSVCollection.extend({
-        url: "csv/events.csv",
+    var Events = AppCollection.extend({
+        url: options.filetype + "/events." + options.filetype,
         model: Event,
         comparator: function(e) {
             return e.get('time').start.valueOf();

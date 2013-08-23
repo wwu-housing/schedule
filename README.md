@@ -27,6 +27,8 @@ title after the last column in your file.
 
 The data is located in the `json/` directory.
 
+In order to use json, you'll have to make one change. In the `js/script.js` file, change options.filetype to "json".
+
 #### `event.json`
 
 An array of events. Each event looks like the following.
