@@ -43,10 +43,6 @@ h2 {
 .u_hidden h5 {
     margin-bottom: 0;
 }
-#overview_container {
-    overflow-x: scroll;
-    -webkit-overflow-scrolling: touch;
-}
 #overview {
     margin-top: -3em;
     border: none;
