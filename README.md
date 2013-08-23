@@ -13,9 +13,21 @@ The following libraries are included and used in this tool.
 
 ## Data
 
-The data for this app comes from three json files located in the `json/` directory.
+The data for this app can come from either csv or json files.
 
-### `event.json`
+### csv
+
+csv allows you to modify the data in your schedule with Excell.
+
+The data is located in the `csv/` directory. There's currently a bug preventing
+the files from working as I would like. The workaround is to have a "filler"
+title after the last column in your file.
+
+### json
+
+The data is located in the `json/` directory.
+
+#### `event.json`
 
 An array of events. Each event looks like the following.
 
@@ -32,7 +44,7 @@ An array of events. Each event looks like the following.
 }
 ```
 
-### `people.json`
+#### `people.json`
 
 An array of people. Each person looks like the following.
 
@@ -54,7 +66,7 @@ An array of people. Each person looks like the following.
 }
 ```
 
-### `jobs.json`
+#### `jobs.json`
 
 An array of jobs. Each job looks like the following.
 
