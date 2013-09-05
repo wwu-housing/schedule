@@ -72,7 +72,8 @@ $(function(){
                 },
                 parse: function(response) {
                     var json = [];
-                    var lines = response.split('\n');
+                    var text = response.replace(',,', ', ,', "gm");
+                    var lines = text.split('\n');
                     var keys = lines.shift().split(',');
                     _.each(lines, function(line) {
                         var line_array = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
@@ -80,7 +81,18 @@ $(function(){
                             var object = {};
                             _.each(keys, function(key, i) {
                                 // the key indicates that it's supposed to be nested
-                                if (key.indexOf('-') > 0) {
+                                if (key.indexOf('--') > 0) {
+                                    console.log(line_array[i]);
+                                    if (line_array[i] && line_array[i] !== "" && line_array[i] !== " ") {
+                                        var key_p = key.split('--');
+                                        console.log(key_p[1]);
+                                        object[key_p[0]] = object[key_p[0]] || [];
+                                        object[key_p[0]].push({
+                                            "id": +key_p[1],
+                                            "requirement": line_array[i]
+                                        });
+                                    }
+                                } else if (key.indexOf('-') > 0) {
                                     // split the key into it's levels
                                     var key_p = key.split('-');
                                     // find how deep it goes
@@ -147,6 +159,7 @@ $(function(){
                             json.push(object);
                         }
                     });
+                    console.log(json);
                     return json;
                 }
             });
@@ -173,6 +186,9 @@ $(function(){
         url: options.filetype + "/jobs." + options.filetype,
         model: Job,
         comparator: function(e) {
+            if (e.get('title_sanitized') == "all-staff") {
+                return "zzzzall-staff";
+            }
             return e.get('title_sanitized');
         },
     });
