@@ -11,7 +11,7 @@ $(function(){
     Backbone.emulateJSON = true;
 
     var options = {
-        filetype: "json", // "csv" or "json"
+        filetype: "csv", // "csv" or "json"
     }
 
     /*----------------------*
@@ -76,7 +76,7 @@ $(function(){
                     var keys = lines.shift().split(',');
                     _.each(lines, function(line) {
                         var line_array = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-                        if (line_array) {
+                        if (line_array && line_array.length > 1) {
                             var object = {};
                             _.each(keys, function(key, i) {
                                 // the key indicates that it's supposed to be nested
@@ -245,7 +245,6 @@ $(function(){
             // scroll to the sidebar
             var target = this.$('#side').position().top - 10;
             var duration = (target - this.$el.scrollTop()) * 0.3;
-            console.log(duration);
             this.$el.animate({
                 scrollTop: target
             }, duration);
