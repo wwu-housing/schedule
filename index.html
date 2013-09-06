@@ -50,11 +50,13 @@
         </div>
     </div>
 
-    <!-- -- -- -- -- -->
-    <!--  Javascript -->
-    <!-- -- -- -- -- -->
+<!-- -- -- -- -- -->
+<!--  Javascript -->
+<!-- -- -- -- -- -->
+    <script type="text/javascript" src="js/moment-min.js"></script>
     <script type="text/javascript">
         // GLOBAL vars
+        var now = new moment();
         var requirements_list = {
             "r": {
                 "text": "Required",
@@ -81,13 +83,12 @@
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script type="text/javascript" src="js/underscore-min.js"></script>
     <script type="text/javascript" src="js/backbone-min.js"></script>
-    <script type="text/javascript" src="js/moment-min.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/script.js"></script>
 
-    <!-- -- -- -- -- -- -- -- -- -->
-    <!-- Underscore.js templates -->
-    <!-- -- -- -- -- -- -- -- -- -->
+<!-- -- -- -- -- -- -- -- -- -->
+<!-- Underscore.js templates -->
+<!-- -- -- -- -- -- -- -- -- -->
     <script type="text/template" id="list-item-template">
         <a href="#"><%- name %></a>
     </script>
@@ -124,10 +125,13 @@
                     <h3 class="day-of-week"><%- new moment(d[0].time.start).format('dddd, MMM Do') %></h3>
                     <ul class="list-unstyled">
                         <% _.each(d, function(e) { %>
-                            <li class="event border-<%- e.req.label %>" style="min-height: <%- e.height %>em;">
+                            <li class="event border-<%- e.req.label %>
+                                       <% if (e.time.start.isBefore(now) && e.time.end.isAfter(now)) { %> current<% } %>
+                                       <% if (e.time.end.isBefore(now)) { %> past<% } %>"
+                                style="min-height: <%- e.height %>em;">
                                 <span class="tooltip-trigger label pull-right label-<%- e.req.label %>" data-toggle="tooltip" data-placement="left" title="<%- e.req.description %>"><%- e.req.text %></span>
                                 <h4><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></h4>
-                                <p><%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %><% if (e.place) { %>, <%- e.place %><% } %></p>
+                                <p><%- e.time.start.format("h:mm a") %><% if (e.time.end) { %> - <%- e.time.end.format("h:mm a") %><% } %><% if (e.place) { %>, <%- e.place %><% } %></p>
                             </li>
                         <% }); %>
                     </ul>
@@ -148,7 +152,10 @@
                     <h3 class="day-of-week"><%- new moment(d[0].time.start).format('dddd, MMM Do') %></h3>
                     <ul class="list-unstyled">
                         <% _.each(d, function(e) { %>
-                            <li class="event border-<%- e.req.label %>" style="min-height: <%- e.height %>em;">
+                            <li class="event border-<%- e.req.label %>
+                                       <% if (e.time.start.isBefore(now) && e.time.end.isAfter(now)) { %> current<% } %>
+                                       <% if (e.time.end.isBefore(now)) { %> past<% } %>"
+                                style="min-height: <%- e.height %>em;">
                                 <span class="tooltip-trigger label pull-right label-<%- e.req.label %>" data-toggle="tooltip" data-placement="left" title="<%- e.req.description %>"><%- e.req.text %></span>
                                 <h4><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></h4>
                                 <p><%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %><% if (e.place) { %>, <%- e.place %><% } %></p>
@@ -173,7 +180,10 @@
                     <h3 class="day-of-week"><%- new moment(d[0].time.start).format('dddd, MMM Do') %></h3>
                     <ul class="list-unstyled">
                         <% _.each(d, function(e) { %>
-                            <li class="event" style="min-height: <%- (e.time.end - e.time.start) / (1000 * 60 * 15) %>em;">
+                            <li class="event
+                                       <% if (e.time.start.isBefore(now) && e.time.end.isAfter(now)) { %> current<% } %>
+                                       <% if (e.time.end.isBefore(now)) { %> past<% } %>"
+                                style="min-height: <%- (e.time.end - e.time.start) / (1000 * 60 * 15) %>em;">
                                 <h4><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></h4>
                                 <p><%- new moment(e.time.start).format("h:mm a") %><% if (e.time.end) { %> - <%- new moment(e.time.end).format("h:mm a") %><% } %><% if (e.place) { %>, <%- e.place %><% } %></p>
                             </li>
@@ -244,8 +254,11 @@
                     <tr>
                     <% _.each(events, function(d, d_i) { %>
                         <tr class="day"><td><h4><%- new moment(d[0].time.start).format('dddd') %></h4></td></tr>
-                        <% _.each(d, function(e) { %>
-                            <th class="event-name"><a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></th>
+                        <% _.each(d, function(e, i) { %>
+                            <th class="event-name
+                                       <% if (e.time.start.isBefore(now) && e.time.end.isAfter(now)) { %> current<% } %>
+                                       <% if (e.time.end.isBefore(now)) { %> past<% } %>">
+                                <a href="#event/<%- e.id %>" title="<%- e.id %>" class="unstyled"><%- e.name %></a></th>
                                 <% _.each(e.j_data, function(j, j_i) { %>
                                     <td class="<%- titles[j_i] %> job"><% if (j) { %><span class="tooltip-trigger<% if (j) { %> label label-<%- requirements_list[j].label %><% }; %>" data-toggle="tooltip" data-container="body" title="<%- requirements_list[j].description %>"><%- j %></span><% }; %></td>
                                 <% }); %>

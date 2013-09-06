@@ -159,7 +159,6 @@ $(function(){
                             json.push(object);
                         }
                     });
-                    console.log(json);
                     return json;
                 }
             });
@@ -327,6 +326,9 @@ $(function(){
                 }
             }, this);
             // group by day
+            this.e_data = _.sortBy(this.e_data, function(e) {
+                return e.time.start.valueOf();
+            });
             this.e_data = utils.groupByDay(this.e_data);
         }
     });
@@ -336,8 +338,13 @@ $(function(){
             this.listenTo(this.model, 'change', this.render);
             this.listenTo(this.model, 'destroy', this.remove);
 
+            var this_events = this.model.get('events');
+            var event_data = _.union(this_events, _.filter(all_jobs.findWhere({title_sanitized: 'all-staff'}).get('events'), function(e) {
+                return !_.contains(_.pluck(this_events, 'id'), e.id);
+            }));
+
             // get events for this job
-            this.get_e_data(this.model.get('events'));
+            this.get_e_data(event_data);
         },
         render: function() {
             var json = this.model.toJSON();
