@@ -1,0 +1,25 @@
+CACHE MANIFEST
+# v1 - 2013-9-9
+
+CACHE:
+
+NETWORK:
+json/events.json
+json/jobs.json
+json/people.json
+csv/events.csv
+csv/jobs.csv
+csv/people.csv
+index.html
+css/style.css
+css/bootstrap.min.css
+js/script.js
+js/backbone-min.js
+js/bootstrap.min.js
+js/fastclick.min.js
+js/jquery-1.10.2.min.js
+js/moment-min.js
+js/underscore-min.js
+
+FALLBACK:
+fallback.html

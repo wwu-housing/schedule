@@ -8,6 +8,17 @@ h2 {
 .navbar .navbar-btn {
     margin-right: 15px;
 }
+#mobile-nav.navbar {
+    margin-bottom: 0;
+    background-color: rgba(247, 247, 247, 0.95);
+    border-top: 1px solid rgb(230, 230, 230);
+    min-height: 30px;
+}
+#mobile-nav .navbar-text {
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
 @media (min-width: 768px) {
     .navbar-header {
         padding-left: 0;
@@ -15,6 +26,12 @@ h2 {
     #side {
         text-align: right;
     }
+    #main_container {
+        padding-bottom: 0px;
+    }
+}
+#main_container {
+    padding-bottom: 45px;
 }
 .day {
     margin-bottom: 2em;

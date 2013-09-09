@@ -216,7 +216,10 @@ $(function(){
             "click #show_events": "show_events",
             "click #show_overview": "show_overview",
             "click #to_nav": "scroll_down",
-            "click #to_top": "scroll_up",
+            "click .to_top": "scroll_up",
+            "click #person-mobile-link": "scroll_person",
+            "click #job-mobile-link": "scroll_job",
+            "click #other-mobile-link": "scroll_other"
         },
         initialize: function() {
             this.listenTo(all_jobs, 'add', this.addJob);
@@ -256,19 +259,34 @@ $(function(){
         show_overview: function() {
             appRouter.navigate("overview", {trigger: true});
         },
-        scroll_down: function() {
-            // scroll to the sidebar
-            var target = this.$('#side').position().top - 10;
+        scrollTo: function(e, target_id) {
+            e.preventDefault();
+            var target = $(target_id).offset().top - 10;
+            console.log(target);
+            console.log(this.$el.scrollTop());
             var duration = (target - this.$el.scrollTop()) * 0.3;
             this.$el.animate({
                 scrollTop: target
             }, duration);
+        },
+        scroll_down: function(e) {
+            // scroll to the sidebar
+            this.scrollTo(e, '#side');
         },
         scroll_up: function() {
             var duration = this.$el.scrollTop() * 0.4;
             this.$el.animate({
                 scrollTop: 0
             }, duration);
+        },
+        scroll_person: function(e) {
+            this.scrollTo(e, '#all_people_label');
+        },
+        scroll_job: function(e) {
+            this.scrollTo(e, '#all_jobs_label');
+        },
+        scroll_other: function(e) {
+            this.scrollTo(e, '#show_events');
         }
     });
 
@@ -743,5 +761,7 @@ $(function(){
              $(document).stop();
         }
     });
+    // make mobile taps feel more responsive
+    FastClick.attach(document.body);
 
 });

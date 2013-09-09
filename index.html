@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" manifest="schedule.appcache">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- act like an app -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
 
     <title>Schedule | WWU ResTek</title>
 
@@ -15,7 +18,7 @@
 </head>
 
 <body>
-    <div class="navbar navbar-default navbar-static-top">
+    <div class="navbar navbar-default navbar-static-top hidden-xs">
         <div class="container">
             <div class="navbar-header">
                 <a class="navbar-brand" href="#">Schedule</a>
@@ -33,19 +36,37 @@
             </div> -->
         </div>
     </div>
+    <div class="navbar navbar-default navbar-fixed-bottom visible-xs" id="mobile-nav">
+        <div class="container">
+            <div class="row">
+                <div class="col-xs-3 text-center">
+                    <p class="navbar-text"><a href="#" id="person-mobile-link">#people</a></p>
+                </div>
+                <div class="col-xs-3 text-center">
+                    <p class="navbar-text"><a href="#" id="job-mobile-link">#jobs</a></p>
+                </div>
+                <div class="col-xs-3 text-center">
+                    <p class="navbar-text"><a href="#" id="other-mobile-link">more</a></p>
+                </div>
+                <div class="col-xs-3 text-center">
+                    <p class="navbar-text"><a href="#" class="to_top">top</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <div class="container">
+
+    <div class="container" id="main_container">
         <div class="row" id="main">
             <div class="col-sm-9 col-lg-10" id="content">
             </div>
             <div class="col-sm-3 col-lg-2" id="side">
-                <h4><a href="#person" class="unstyled">#person</a></h4><!-- #hashtags for you, @firassity -->
+                <h4 id="all_people_label"><a href="#person" class="unstyled">#person</a></h4><!-- #hashtags for you, @firassity -->
                 <ul id="all_people" class="list-unstyled"></ul>
-                <h4><a href="#job" class="unstyled">#job</a></h4>
+                <h4 id="all_jobs_label"><a href="#job" class="unstyled">#job</a></h4>
                 <ul id="all_jobs" class="list-unstyled"></ul>
                 <p><button id="show_events" class="btn btn-default">All Events</button></p>
                 <p><button id="show_overview" class="btn btn-default">Overview</button></p>
-                <p class="visible-xs"><button class="btn btn-default" id="to_top"><span class="glyphicon glyphicon-arrow-up"></span></button></a>
             </div>
         </div>
     </div>
@@ -80,10 +101,11 @@
             }
         };
     </script>
-    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script type="text/javascript" src="js/jquery-1.10.2.min.js"></script>
     <script type="text/javascript" src="js/underscore-min.js"></script>
     <script type="text/javascript" src="js/backbone-min.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/fastclick.min.js"></script>
     <script type="text/javascript" src="js/script.js"></script>
 
 <!-- -- -- -- -- -- -- -- -- -->
@@ -198,7 +220,7 @@
     </script>
     <script type="text/template" id="all-people-template">
         <h2>#person</h2>
-        <ul id="all_people" class="list-unstyled">
+        <ul id="people" class="list-unstyled">
             <% _.each(things, function(p) { %>
                 <li class="person list-unstyled">
                     <h4><a href="#person/<%- p.username %>"><%- p.name %></a></h4>
@@ -208,7 +230,7 @@
     </script>
     <script type="text/template" id="all-jobs-template">
         <h2>#job</h2>
-        <ul id="all_jobs" class="list-unstyled">
+        <ul id="jobs" class="list-unstyled">
             <% _.each(things, function(j) { %>
                 <li class="job list-unstyled">
                     <h4><a href="#job/<%- j.title_sanitized %>"><%- j.name %></a></h4>
