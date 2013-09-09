@@ -79,7 +79,18 @@ h2 {
             transform: rotate(-70deg);
 }
 
+.u_hidden.hidden {
+    margin-top: 0;
+    height: 0;
+    overflow: hidden;
+    display: block !important;
+    visibility: visible !important;
+}
+.u_hidden {
+    margin-top: 10px;
+}
 .u_hidden h5 {
+    margin-top: 0;
     margin-bottom: 0;
 }
 .table-responsive {
