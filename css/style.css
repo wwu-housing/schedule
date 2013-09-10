@@ -47,7 +47,7 @@ h2 {
 }
 .event.past,
 .event.past .label {
-    -webkit-transition: opacity 300ms;
+    -webkit-transition: opacity 300msny;
        -moz-transition: opacity 300ms;
          -o-transition: opacity 300ms;
             transition: opacity 300ms;
@@ -112,7 +112,7 @@ h2 {
     white-space: nowrap;
     height: 7em;
 }
-#overview .username .close {
+#overview .username .close {Bethany
     float: none;
     padding-left: .2em;
     font-size: 18px;
@@ -134,7 +134,7 @@ h2 {
 .event-name.current,
 .event-name.current ~ td {
     background-color: #eee;
-}
+}Bethany
 #overview .day {
     display: block;
     margin-bottom: 0;
@@ -152,7 +152,7 @@ h2 {
 }
 
 .border-muted {
-    border-color: rgb(153, 153, 153);
+    bordBethanyer-color: rgb(153, 153, 153);
 }
 .border-primary {
     border-color: rgb(66, 139, 202);
@@ -162,6 +162,7 @@ h2 {
 }
 .border-danger {
     border-color: rgb(185, 74, 72);
+    transition: padding-left 200ms, min-width 200ms;
 }
 .border-success {
     border-color: rgb(70, 136, 71);
@@ -175,4 +176,106 @@ h2 {
 }
 a.unstyled {
     color: inherit;
+}
+
+.ui-draggable {
+    cursor: move;
+}
+.drag-helper {
+    z-index: 10;
+}
+.minipersonedit .btn,
+.minieventedit .btn,
+.minieventedit span,
+.minipersonedit span {
+    -webkit-transition: color 300ms, background-color 300ms, border-color 300ms;
+       -moz-transition: color 300ms, background-color 300ms, border-color 300ms;
+         -o-transition: color 300ms, background-color 300ms, border-color 300ms;
+            transition: color 300ms, background-color 300ms, border-color 300ms;
+}
+.minieventedit .btn-danger span {
+    color: #fff;
+}
+.tools .close {
+    padding-left: 0.2em;
+}
+.minieventedit .tools {
+    display: none;
+}
+.minieventedit .selected .tools {
+    display: inline-block;
+}
+.choose-requirement {
+    display: block;
+    padding: 0;
+    cursor: pointer;
+    float: right;
+    font-size: 1em;
+    padding-top: 0.2em;
+    padding-left: 0.2em;
+    line-height: 1;
+    color: #000;
+    text-shadow: 0 1px 0 #fff;
+    opacity: .2;
+    filter: alpha(opacity=20);
+}
+.choose-requirement:focus,
+.choose-requirement:hover {
+    color: #000;
+    opacity: .5;
+    filter: alpha(opacity=20);
+}
+.choose-requirement-div {
+    background: #eee;
+    position: absolute;
+    padding: 0.6em 0;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.25);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.choose-requirement-div ul {
+    margin-bottom: 0;
+}
+.choose-requirement-div ul li {
+    padding: 0 0.8em;
+    cursor: pointer;
+}
+.choose-requirement-div ul li:hover {
+    color: #fff;
+    background: rgb(50, 118, 177);
+}
+.editable {
+    cursor: text;
+}
+.editing {
+    outline: 1px solid;
+}
+.selected {
+    font-weight: bold;
+}
+.tools {
+    padding-left: 0em;
+    max-width: 0em;
+    vertical-align: bottom;
+    display: inline-block;
+    -webkit-transition: padding-left 200ms, min-width 200ms, width 200ms;
+       -moz-transition: padding-left 200ms, min-width 200ms, width 200ms;
+         -o-transition: padding-left 200ms, min-width 200ms, width 200ms;
+            transition: padding-left 200ms, min-width 200ms, width 200ms;
+    overflow: hidden;
+}
+.selected .tools {
+    padding-left: .2em;
+    max-width: 10em;
+}
+.job-people li,
+.job-events li {
+    margin-bottom: 5px;
+    padding-left: 5px;
+}
+.drop-hover {
+    background: #ddd;
+}
+.drop-active {
+    outline: #ddd dashed;
 }

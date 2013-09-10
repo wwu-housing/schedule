@@ -219,7 +219,8 @@ $(function(){
             "click .to_top": "scroll_up",
             "click #person-mobile-link": "scroll_person",
             "click #job-mobile-link": "scroll_job",
-            "click #other-mobile-link": "scroll_other"
+            "click #other-mobile-link": "scroll_other",
+            "click #edit_view": "edit_view",
         },
         initialize: function() {
             this.listenTo(all_jobs, 'add', this.addJob);
@@ -287,7 +288,10 @@ $(function(){
         },
         scroll_other: function(e) {
             this.scrollTo(e, '#show_events');
-        }
+        },
+        edit_view: function() {
+            appRouter.navigate("edit", {trigger: true});
+        },
     });
 
     // small views
@@ -633,6 +637,318 @@ $(function(){
         }
     });
 
+    // edit view
+    var HasChildrenView = Backbone.View.extend({
+        children: [],
+        spawn_child: function(view_type, model) {
+            var child_view = new view_type({model: model, parent: this.model});
+            this.children.push(child_view);
+            return child_view.render();
+        },
+        remove: function() {
+            // OVERRIDDEN TO REMOVE CHILDREN
+            _.each(this.children, function(child) {
+                child.remove();
+            });
+            this.$el.remove();
+            this.stopListening();
+            return this;
+        }
+    });
+    var EditView = HasChildrenView.extend({
+        id: "editview",
+        template: _.template($('#editview-template').html()),
+        initialize: function() {
+        },
+        render: function() {
+            this.$el.html(this.template());
+            all_events.each(function(e) {
+                this.spawn_child(EventEditView, e).$el.appendTo(this.$('#edit-col-events'));
+            }, this);
+            all_jobs.each(function(j) {
+                this.spawn_child(JobEditView, j).$el.appendTo(this.$('#edit-col-jobs'));
+            }, this);
+            all_people.each(function(p) {
+                this.spawn_child(PersonEditView, p).$el.appendTo(this.$('#edit-col-people'));
+            }, this);
+            return this;
+        },
+    });
+    var ContentEditableView = HasChildrenView.extend({
+        events: {
+            'dblclick .editable': 'edit',
+            'keypress  .editing': 'save',
+            'focus     .editing': 'save',
+            'input     .editing': 'save',
+            'paste     .editing': 'save',
+            'cut       .editing': 'save',
+            'drop      .editing': 'save',
+            'textInput .editing': 'save',
+            'blur .editing': 'done_editing',
+        },
+        edit: function(e) {
+            $('.editing').removeClass('editing').attr('contenteditable', 'false');
+            $('.ui-draggable').draggable('enable');
+            this.$(e.target).addClass('editing').attr('contenteditable', 'true')
+            this.$el.draggable('disable');
+        },
+        save: function(e) {
+            $edit_el = this.$(e.target);
+            this.model.set($edit_el.data('attr'), $edit_el.text());
+            return $edit_el;
+        },
+        done_editing: function(e) {
+            this.save(e).removeClass('editing').attr('contenteditable', 'false').closest('ui-draggable');
+            this.$el.draggable('enable');
+        },
+    });
+    var EventEditView = ContentEditableView.extend({
+        className: "event-edit panel panel-default",
+        template: _.template($('#event-editview-template').html()),
+        render: function() {
+            this.$el.html(this.template(this.model.toJSON()));
+            var that = this;
+            this.$el.draggable({
+                opacity: 0.7,
+                helper: function(e) {
+                    return $('<div class="drag-helper" data-id="' + that.model.get('id') + '"><span class="btn btn-default btn-sm">' + that.model.get('name') + '</span></div>');
+                },
+                cursor: "move",
+                cursorAt: {
+                    top: 10,
+                    left: 10
+                },
+            });
+            return this;
+        }
+    });
+    var JobEditView = ContentEditableView.extend({
+        className: "job-edit panel panel-default",
+        template: _.template($('#job-editview-template').html()),
+        initialize: function() {
+        },
+        render: function() {
+            var json = this.model.toJSON();
+            this.$el.html(this.template(json));
+            _.each(json.events, this.render_event, this);
+            _.each(json.people, this.render_person, this);
+            var that = this;
+            this.$('.job-people').droppable({
+                accept: '.person-edit',
+                activeClass: 'drop-active',
+                hoverClass: 'drop-hover',
+                drop: function(e, ui) {
+                    var people = that.model.get('people');
+                    var username = ui.helper.text();
+                    if (!_.contains(people, username)) {
+                        people.push(username);
+                        that.model.set('people', people);
+                        that.render_person(username);
+                    } else {
+                        // provide visual feedback that a duplicate exists.
+                    }
+                }
+            });
+            this.$('.job-events').droppable({
+                accept: '.event-edit',
+                activeClass: 'drop-active',
+                hoverClass: 'drop-hover',
+                drop: function(e, ui) {
+                    var events = that.model.get('events');
+                    var event_id = ui.helper.data('id');
+                    if (!_.some(events, function(e) {
+                        return e.id == event_id;
+                    })) {
+                        console.log(events);
+                        var new_event = {
+                            id: event_id,
+                            requirement: "r"
+                        };
+                        events.push(new_event);
+                        that.model.set('events', events);
+                        that.render_event(new_event);
+                    } else {
+                        // provide visual feedback that a duplicate exists.
+                    }
+                }
+            });
+            return this;
+        },
+        render_event: function(e) {
+            var child = all_events.findWhere({'id': e.id});
+            this.spawn_child(MiniEventEditView, child).$el.appendTo(this.$('.job-events'));
+        },
+        render_person: function(p) {
+            var child = all_people.findWhere({'username': p});
+            this.spawn_child(MiniPersonEditView, child).$el.appendTo(this.$('.job-people'));
+        }
+    });
+    var PersonEditView = ContentEditableView.extend({
+        className: "person-edit",
+        template: _.template($('#person-editview-template').html()),
+        render: function() {
+            var json = this.model.toJSON();
+            this.$el.html(this.template(json));
+            _.each(json.events, function(e) {
+                var child = all_events.findWhere({'id': e.id});
+                this.spawn_child(MiniEventEditView, child).$el.appendTo(this.$('.job-events'));
+            }, this);
+            var that = this;
+            this.$el.draggable({
+                opacity: 0.7,
+                helper: function(e) {
+                    return $('<div class="drag-helper"><span class="btn btn-default btn-sm">' + that.model.get('username') + '</span></div>');
+                },
+                cursor: "move",
+                cursorAt: {
+                    top: 10,
+                    left: 10
+                },
+            });
+            return this;
+        },
+    });
+    var ContentSelectableView = Backbone.View.extend({
+        events: {
+            'mouseenter .tools .close': 'add_remove_warn',
+            'mouseleave .tools .close': 'hide_remove_warn',
+            'click .tools .close': 'remove_child',
+            'click .tools .choose-requirement': 'choose_requirement',
+            'click .selectable': 'select',
+            'click .selected': 'unselect',
+        },
+        tagName: 'li',
+        render: function() {
+            this.$el.html(this.template(this.model.toJSON()));
+            var that = this;
+            var animateNew = window.setTimeout(function() {
+                that.$('.btn-success').removeClass('btn-success').addClass('btn-default');
+            }, 200);
+            return this;
+        },
+        select: function(e) {
+            this.$('.btn').addClass('selected active');
+            return this;
+        },
+        unselect: function(e) {
+            this.$('.btn').removeClass('selected active');
+            return this;
+        },
+        add_remove_warn: function(e) {
+            this.$('.btn').addClass('btn-danger').removeClass('btn-default');
+            return this;
+        },
+        hide_remove_warn: function(e) {
+            this.$('.btn').removeClass('btn-danger').addClass('btn-default');
+            return this;
+        },
+        remove_child: function(e) {
+            this.removeFromParent().remove();
+            return this;
+        },
+        removeFromParent: function() {
+            console.log(this.options.parent);
+            return this;
+        },
+        choose_requirement: function(e) {
+            var chooseview = new ChooseRequirementView({parent: this}).render(e);
+            return this;
+        }
+    });
+    var ChooseRequirementView = Backbone.View.extend({
+        id: 'choose-requirement-div',
+        className: 'choose-requirement-div',
+        events: {
+            'click li': 'choose',
+            'blur': 'el_blur'
+        },
+        render: function(e) {
+            this.$el.html('<ul class="list-unstyled"></ul>').appendTo('body').css({
+                'top': e.pageY,
+                'left': e.pageX,
+            }).focus();
+            _.each(requirements_list, function(req, code) {
+                this.$('ul').append('<li data-code="' + code + '" class="text-' + req.label + '">' + req.text + '</li>');
+            }, this);
+            var that = this;
+            $('body').on('click', function(e) {
+                if (!($(e.target).hasClass('choose-requirement-div') ||
+                    $(e.target).parent('.choose-requirement-div').length > 0 ||
+                    $(e.target).hasClass('choose-requirement'))) {
+                    that.remove();
+                }
+            });
+            return this;
+        },
+        choose: function(e) {
+            var code = $(e.target).data('code');
+            var parent_event = this.options.parent.model;
+            var parent_event_parent = this.options.parent.options.parent;
+            var event_id = parent_event.get('id');
+            var new_events = _.map(parent_event_parent.get('events'), function(e) {
+                if (e.id == event_id) {
+                    return {
+                        'id': event_id,
+                        'requirement': code
+                    }
+                } else {
+                    return e;
+                }
+            });
+            parent_event_parent.set('events', new_events);
+            return this.remove();
+        },
+        el_blur: function() {
+            this.remove();
+        },
+        remove: function() {
+            // OVERRIDDEN TO REMOVE CHILDREN
+            $('body').off('click');
+            this.$el.remove();
+            this.stopListening();
+            return this;
+        }
+    });
+    var MiniPersonEditView = ContentSelectableView.extend({
+        className: 'minipersonedit',
+        template: _.template($('#miniperson-editview-template').html()),
+        initialize: function() {
+            this.listenTo(this.model, 'change:username', this.render);
+        },
+        removeFromParent: function() {
+            var parent = this.options.parent;
+            parent.set('people', _.without(parent.get('people'), this.model.get('username')));
+            return this;
+        }
+    });
+    var MiniEventEditView = ContentSelectableView.extend({
+        className: 'minieventedit',
+        template: _.template($('#minievent-editview-template').html()),
+        initialize: function(options) {
+            this.listenTo(this.model, 'change:name', this.render);
+            this.listenTo(options.parent, 'change:events', this.render);
+        },
+        render: function() {
+            console.log('rendering mini event');
+            var json = this.model.toJSON();
+            // look at the parents events, find the one with an id matching this model's and get it's requirement
+            json['requirement'] = _.findWhere(this.options.parent.get('events'), {'id': this.model.get('id')}).requirement;
+            this.$el.html(this.template(json));
+            var that = this;
+            var animateNew = window.setTimeout(function() {
+                that.$('.btn-success').removeClass('btn-success').addClass('btn-default');
+            }, 200);
+            return this;
+        },
+        removeFromParent: function() {
+            var parent = this.options.parent;
+            parent.set('events', _.reject(parent.get('events'), function(e) {
+                return e.id == this.model.get('id');
+            }, this));
+            return this;
+        }
+    });
+
     // empty state - essentially a 404
     var EmptyState = Backbone.View.extend({
         render: function() {
@@ -670,6 +986,8 @@ $(function(){
             "event/:id/":       "remove_slash",
             "job/:title":       "one_job",
             "job/:title/":      "remove_slash",
+            "edit":             "edit_view",
+            "edit/":            "remove_slash",
             "":                 "index",
             "*anything":        "empty",
         },
@@ -696,6 +1014,9 @@ $(function(){
         },
         one_job: function(title) {
             this.swapDetailView(all_jobs, JobView, {'title_sanitized': title});
+        },
+        edit_view: function() {
+            this.swapView(new EditView());
         },
         remove_slash: function() {
             this.navigate(location.hash.slice(0, -1), {trigger: true});
