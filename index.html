@@ -57,6 +57,7 @@
                 <ul id="all_jobs" class="list-unstyled"></ul>
                 <p><button id="show_events" class="btn btn-default">All Events</button></p>
                 <p><button id="show_overview" class="btn btn-default">Overview</button></p>
+                <p><button id="show_edit" class="btn btn-default">Edit</button></p>
             </div>
         </div>
     </div>
@@ -93,6 +94,7 @@
     </script>
     <script type="text/javascript" src="js/jquery-1.10.2.min.js"></script>
     <script type="text/javascript" src="js/jquery-ui-1.10.3.custom.min.js"></script>
+    <script type="text/javascript" src="js/jquery.ui.touch-punch.min.js"></script>
     <script type="text/javascript" src="js/underscore-min.js"></script>
     <script type="text/javascript" src="js/backbone-min.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
@@ -104,9 +106,6 @@
 <!-- -- -- -- -- -- -- -- -- -->
     <script type="text/template" id="list-item-template">
         <a href="#"><%- name %></a>
-    </script>
-    <script type="text/template" id="short-event-template">
-        <a href="#event/<%- id %>"><%- name %></a>
     </script>
     <script type="text/template" id="short-person-template">
         <a href="#person/<%- username %>"><%- name %></a>
@@ -292,63 +291,78 @@
         </div>
     </script>
     <script type="text/template" id="editview-template">
-        <h2>Edit data</h2>
+        <h2>Edit data
+            <div class="btn-group">
+                <button id="bulk-delete" type="button" class="btn btn-danger btn-sm" disabled="disabled">Delete</button>
+                <button id="generate-json" type="button" class="btn btn-info btn-sm">Generate JSON</button>
+                <!-- <button id="bulk-change" type="button" class="btn btn-default btn-sm" disabled="disabled">Change</button> -->
+            </div>
+        </h2>
+        <div class="row" id="json">
+            <div class="col-xs-12">
+                <pre></pre>
+            </div>
+        </div>
         <div class="row">
             <div class="col-sm-4" id="edit-col-events">
+                <button id="new-event" type="button" class="btn btn-default btn-block">new #event</button>
             </div>
             <div class="col-sm-4" id="edit-col-jobs">
+                <button id="new-job" type="button" class="btn btn-default btn-block">new #job</button>
             </div>
             <div class="col-sm-4" id="edit-col-people">
+                <button id="new-person" type="button" class="btn btn-default btn-block">new #person</button>
             </div>
         </div>
     </script>
     <script type="text/template" id="event-editview-template">
         <div class="panel-heading">
-            <h4 class="panel-title"><span class="editable" data-attr="name"><%- name %></span> <small><%- id %></small></h4>
+            <h4 class="panel-title">
+                <span class="editable" data-attr="name"><%- name %></span>
+                <small><%- id %></small>
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            </h4>
         </div>
         <div class="panel-body">
-            <p class="editable place" data-attr="place">
-                <% if (place && place.trim() && place.trim() != "") { %>
-                    <%- place %>
-                <% } else { %>
-                    <i class="text-muted">No place</i>
-                <% } %>
-            </p>
-            <p><span class="start editable"><%- time.start.format('MMM Do h:mm a') %></span> to <span class="end editable"><%- time.end.format('MMM Do h:mm a') %></span></p>
-            <p class="description editable" data-attr="description">
-                <% if (description && description.trim() && description.trim() != "") { %>
-                    <%- description %>
-                <% } else { %>
-                    <i class="text-muted">No description</i>
-                <% } %>
-            </p>
+            <% var place_exists = place && place.trim() && place.trim() != "" %>
+            <p class="editable <% if (!place_exists) { %> text-muted<% } %>" data-attr="place"><% if (place_exists) { %><%- place %><% } else { %>No place<% } %></p>
+            <p><span class="editable" data-attr="start"><%- time.start.format('YYYY-MM-DD HH:mm') %></span> to <span class="editable" data-attr="end"><%- time.end.format('YYYY-MM-DD HH:mm') %></span></p>
+            <% var desc = description && description.trim() && description.trim() != "" %>
+            <p class="editable<% if (!desc) { %> text-muted<% } %>" data-attr="description"><% if (desc) { %><%- description %><% } else { %>No description<% } %></p>
         </div>
     </script>
     <script type="text/template" id="job-editview-template">
         <div class="panel-heading">
-            <h4 class="editable panel-title" data-attr="name"><%- name %></h4>
+            <h4 class="panel-title">
+                <span class="editable" data-attr="name"><%- name %></span>
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            </h4>
         </div>
         <div class="panel-body">
-            <div class="more">
-                <ul class="list-inline job-people">
-                </ul>
-                <ul class="list-unstyled job-events">
-                </ul>
-            </div>
+            <ul class="list-inline job-people">
+            </ul>
+            <ul class="list-unstyled job-events">
+            </ul>
         </div>
     </script>
     <script type="text/template" id="person-editview-template">
-        <h4><span class="editable" data-attr="name"><%- name %></span> <small class="" data-attr="username"><%- username %></small></h4>
-        <div class="more">
-            <ul class="job-events">
+        <div class="panel-heading">
+            <h4 class="panel-title">
+                <span class="editable" data-attr="name"><%- name %></span>
+                <small class="" data-attr="username"><%- username %></small>
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            </h4>
+        </div>
+        <div class="panel-body">
+            <ul class="list-unstyled job-events">
             </ul>
         </div>
     </script>
     <script type="text/template" id="miniperson-editview-template">
-        <span class="selectable btn btn-success btn-xs" data-attr="username"><%- username %> <span class="tools"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button></span></span>
+        <span class="selectable btn btn-default btn-xs" data-attr="username" data-usernam="<%- username %>"><%- username %> <span class="tools"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button></span></span>
     </script>
     <script type="text/template" id="minievent-editview-template">
-        <span class="selectable btn btn-default btn-xs" data-attr="name">
+        <span class="selectable btn btn-default btn-xs" data-attr="name" data-id="<%- id %>">
             <span class="text-<%- requirements_list[requirement].label %>" title="<%- requirements_list[requirement].description %>"><%- name %></span>
             <span class="tools">
                 <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>

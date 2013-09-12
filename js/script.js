@@ -1,5 +1,4 @@
 $(function(){
-
     var methodMap = {
         'create': 'POST',
         'update': 'PUT',
@@ -11,7 +10,7 @@ $(function(){
     Backbone.emulateJSON = true;
 
     var options = {
-        filetype: "csv", // "csv" or "json"
+        filetype: "json", // "csv" or "json"
     }
 
     /*----------------------*
@@ -20,7 +19,7 @@ $(function(){
     var utils = {
         groupByDay: function(collection) {
             return _.groupBy(collection, function(e) {
-                return e.time.start.isoWeekday();
+                return e.time.start.dayOfYear();
             });
         },
     }
@@ -28,12 +27,28 @@ $(function(){
     /*------------*
      |   Models   |
      *------------*/
-    var Job = Backbone.Model.extend({
+    var HasEventsModel = Backbone.Model.extend({
+        check_events: function(model) {
+            this.set('events', _.reject(this.get('events'), function(e) {
+                return e.id == model.get('id');
+            }));
+        },
+    });
+    var Job = HasEventsModel.extend({
         initialize: function() {
             this.set("title_sanitized", this.get("name").replace(' ', '-').toLowerCase());
-        }
+            this.listenTo(all_people, 'remove', this.check_people);
+            this.listenTo(all_events, 'remove', this.check_events);
+        },
+        check_people: function(model) {
+            this.set('people', _.without(this.get('people'), model.get('username')));
+        },
     });
-    var Person = Backbone.Model.extend();
+    var Person = HasEventsModel.extend({
+        initialize: function() {
+            this.listenTo(all_events, 'remove', this.check_events);
+        },
+    });
     var Event = Backbone.Model.extend();
 
     /*-----------------*
@@ -220,13 +235,11 @@ $(function(){
             "click #person-mobile-link": "scroll_person",
             "click #job-mobile-link": "scroll_job",
             "click #other-mobile-link": "scroll_other",
-            "click #edit_view": "edit_view",
+            "click #show_edit": "show_edit",
         },
         initialize: function() {
             this.listenTo(all_jobs, 'add', this.addJob);
             this.listenTo(all_people, 'add', this.addPerson);
-            this.listenTo(all_jobs, 'reset', this.addAllJobs);
-            this.listenTo(all_people, 'reset', this.addAllPeople);
 
             // add everything to the sidebar and render this view,
             // it's not controlled by the router so it has to render itself
@@ -263,8 +276,6 @@ $(function(){
         scrollTo: function(e, target_id) {
             e.preventDefault();
             var target = $(target_id).offset().top - 10;
-            console.log(target);
-            console.log(this.$el.scrollTop());
             var duration = (target - this.$el.scrollTop()) * 0.3;
             this.$el.animate({
                 scrollTop: target
@@ -289,7 +300,7 @@ $(function(){
         scroll_other: function(e) {
             this.scrollTo(e, '#show_events');
         },
-        edit_view: function() {
+        show_edit: function() {
             appRouter.navigate("edit", {trigger: true});
         },
     });
@@ -300,7 +311,7 @@ $(function(){
         template: _.template($('#list-item-template').html()),
         initialize: function() {
             this.listenTo(this.model, 'change', this.render);
-            this.listenTo(this.model, 'destroy', this.remove);
+            this.listenTo(this.model, 'remove', this.remove);
         },
         render: function() {
             this.$el.html(this.template(this.model.toJSON()));
@@ -313,16 +324,13 @@ $(function(){
     var ShortPersonView = ListItemView.extend({
         template: _.template($('#short-person-template').html()),
     });
-    var ShortEventView = ListItemView.extend({
-        template: _.template($('#short-event-template').html()),
-    });
 
     // detail views (medium)
     var DetailView = Backbone.View.extend({
         template: _.template($('#detail-template').html()),
         initialize: function() {
             this.listenTo(this.model, 'change', this.render);
-            this.listenTo(this.model, 'destroy', this.remove);
+            this.listenTo(this.model, 'remove', this.remove);
         },
         render: function() {
             this.$el.html(this.template(this.model.toJSON()));
@@ -358,7 +366,7 @@ $(function(){
         template: _.template($('#detail-job-template').html()),
         initialize: function() {
             this.listenTo(this.model, 'change', this.render);
-            this.listenTo(this.model, 'destroy', this.remove);
+            this.listenTo(this.model, 'remove', this.remove);
 
             var this_events = this.model.get('events');
             var event_data = _.union(this_events, _.filter(all_jobs.findWhere({title_sanitized: 'all-staff'}).get('events'), function(e) {
@@ -380,7 +388,7 @@ $(function(){
         template: _.template($('#detail-person-template').html()),
         initialize: function() {
             this.listenTo(this.model, 'change', this.render);
-            this.listenTo(this.model, 'destroy', this.remove);
+            this.listenTo(this.model, 'remove', this.remove);
 
             // from the collection of jobs, find any for this person
             this.jobs = _.filter(all_jobs.models, function(j) {
@@ -436,7 +444,7 @@ $(function(){
         template: _.template($('#detail-event-template').html()),
         initialize: function() {
             this.listenTo(this.model, 'change', this.render);
-            this.listenTo(this.model, 'destroy', this.remove);
+            this.listenTo(this.model, 'remove', this.remove);
 
             this.people = new People(all_people.toJSON()); // .clone() still holds references to the original models
             all_people.each(function(p) {
@@ -639,43 +647,127 @@ $(function(){
 
     // edit view
     var HasChildrenView = Backbone.View.extend({
-        children: [],
-        spawn_child: function(view_type, model) {
-            var child_view = new view_type({model: model, parent: this.model});
-            this.children.push(child_view);
-            return child_view.render();
+        spawn_child: function(view_type, model, target) {
+            var new_child = new view_type({model: model, parent: this.model}).render().$el.appendTo(this.$(target));
+            this.children = this.children || [];
+            this.children.push(new_child);
+            return new_child;
         },
         remove: function() {
             // OVERRIDDEN TO REMOVE CHILDREN
             _.each(this.children, function(child) {
                 child.remove();
             });
-            this.$el.remove();
-            this.stopListening();
-            return this;
+            return Backbone.View.prototype.remove.call(this);
         }
     });
     var EditView = HasChildrenView.extend({
         id: "editview",
         template: _.template($('#editview-template').html()),
-        initialize: function() {
+        events: {
+            'click .selectable': 'toggle_delete',
+            'click .minieventedit .selectable': 'toggle_change',
+            'click #bulk-delete': 'bulk_delete',
+            'click #bulk-change': 'bulk_change',
+            'click #generate-json': 'generate_json',
+            'click #new-event': 'new_event',
+            'click #new-job': 'new_job',
+            'click #new-person': 'new_person',
         },
         render: function() {
             this.$el.html(this.template());
             all_events.each(function(e) {
-                this.spawn_child(EventEditView, e).$el.appendTo(this.$('#edit-col-events'));
+                this.spawn_child(EventEditView, e, '#edit-col-events');
             }, this);
             all_jobs.each(function(j) {
-                this.spawn_child(JobEditView, j).$el.appendTo(this.$('#edit-col-jobs'));
+                this.spawn_child(JobEditView, j, '#edit-col-jobs');
             }, this);
             all_people.each(function(p) {
-                this.spawn_child(PersonEditView, p).$el.appendTo(this.$('#edit-col-people'));
+                this.spawn_child(PersonEditView, p, '#edit-col-people');
             }, this);
             return this;
+        },
+        toggle: function(button, target) {
+            if (this.$(target).length > 0) {
+                this.$(button).removeAttr('disabled');
+            } else {
+                this.$(button).attr('disabled', 'disabled');
+            }
+        },
+        toggle_delete: function() {
+            this.toggle('#bulk-delete', '.selectable.active');
+        },
+        toggle_change: function() {
+            this.toggle('#bulk-change', '.minieventedit .selectable.active');
+        },
+        bulk_delete: function() {
+            $('.selectable.active .close').click();
+            this.toggle_delete();
+        },
+        bulk_change: function() {
+            console.log('not implemented');
+        },
+        json_replacer: function(key, value) {
+            if (key == "filler" || key == "filler\r") {
+                return undefined;
+            } else if (typeof(value) == 'string') {
+                return value.replace('\r', '');
+            } else {
+                return value;
+            }
+        },
+        generate_json: function() {
+            this.$('#json').show()
+                .find('pre').html('<div class="form-group"><label>events.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_events.toJSON(), this.json_replacer) +
+                                  '</textarea></div><div class="form-group"><label>jobs.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_jobs.toJSON(), this.json_replacer) +
+                                  '</textarea></div><div class="form-group"><label>people.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_people.toJSON(), this.json_replacer) + '</textarea></div>');
+
+        },
+        new_x: function(model, attributes, collection, view, parent_container, e) {
+            var new_id = _.max(collection.pluck('id')) + 1;
+            attributes['id'] = new_id;
+            var new_model = new model(attributes);
+            collection.add(new_model);
+            this.spawn_child(view, new_model, parent_container);
+            App.scrollTo(e, this.$(parent_container).find('.panel').last());
+        },
+        new_event: function(e) {
+            var attributes = {
+                name: "New Event",
+                time: {
+                    start: new moment(),
+                    end: new moment().add('h', 1)
+                },
+                place: "",
+                description: ""
+            };
+            this.new_x(Event, attributes, all_events, EventEditView, '#edit-col-events', e);
+        },
+        new_job: function(e) {
+            var name = window.prompt("What's this job called (singular, please)?") || "Incinerator";
+            var attributes = {
+                name: name,
+                people: [],
+                events: []
+            };
+            this.new_x(Job, attributes, all_jobs, JobEditView, '#edit-col-jobs', e);
+        },
+        new_person: function(e) {
+            var name = window.prompt("What's this person's name?") || "Johnny Danger";
+            var username = window.prompt("What's this person's username?") || "dangj";
+            var attributes = {
+                name: name,
+                username: username,
+                events: [],
+            };
+            this.new_x(Person, attributes, all_people, PersonEditView, '#edit-col-people', e);
         },
     });
     var ContentEditableView = HasChildrenView.extend({
         events: {
+            'click .panel-title .close': 'remove_model',
+            'mouseenter .panel-title .close': 'add_remove_warn',
+            'mouseleave .panel-title .close': 'hide_remove_warn',
             'dblclick .editable': 'edit',
             'keypress  .editing': 'save',
             'focus     .editing': 'save',
@@ -686,20 +778,50 @@ $(function(){
             'textInput .editing': 'save',
             'blur .editing': 'done_editing',
         },
+        initialize: function() {
+            this.listenTo(this.model, 'remove', this.remove);
+        },
         edit: function(e) {
             $('.editing').removeClass('editing').attr('contenteditable', 'false');
             $('.ui-draggable').draggable('enable');
-            this.$(e.target).addClass('editing').attr('contenteditable', 'true')
+            this.$(e.target).addClass('editing').removeClass('text-muted').attr('contenteditable', 'true')
             this.$el.draggable('disable');
         },
         save: function(e) {
             $edit_el = this.$(e.target);
-            this.model.set($edit_el.data('attr'), $edit_el.text());
+            attr = $edit_el.data('attr');
+            if (attr == 'start') {
+                this.model.set('time', {
+                    'start': new moment($edit_el.text()),
+                    'end': this.model.get('time').end
+                });
+            } else if (attr == 'end') {
+                this.model.set('time', {
+                    'start': this.model.get('time').start,
+                    'end': new moment($edit_el.text())
+                });
+            } else {
+                this.model.set(attr, $edit_el.text());
+            }
             return $edit_el;
         },
         done_editing: function(e) {
-            this.save(e).removeClass('editing').attr('contenteditable', 'false').closest('ui-draggable');
+            var target = this.save(e).removeClass('editing').attr('contenteditable', 'false');
+            if (target.text() && target.text() == "") {
+                target.addClass('text-muted');
+            }
             this.$el.draggable('enable');
+        },
+        remove_model: function() {
+            console.log('Remove model!');
+        },
+        add_remove_warn: function(e) {
+            this.$el.addClass('panel-danger').removeClass('panel-default');
+            return this;
+        },
+        hide_remove_warn: function(e) {
+            this.$el.removeClass('panel-danger').addClass('panel-default');
+            return this;
         },
     });
     var EventEditView = ContentEditableView.extend({
@@ -718,20 +840,62 @@ $(function(){
                     top: 10,
                     left: 10
                 },
+                scroll: true,
+                scrollSensitivity: 100,
+            });
+            return this;
+        },
+        remove_model: function() {
+            all_events.remove(this.model);
+            return this;
+        }
+    });
+    var HasEventsChildrenView = ContentEditableView.extend({
+        render_event: function(e) {
+            var child = all_events.findWhere({'id': e.id});
+            this.spawn_child(MiniEventEditView, child, '.job-events');
+        },
+        set_event_droppable: function() {
+            var json = this.model.toJSON();
+            this.$el.html(this.template(json));
+            _.each(json.events, this.render_event, this);
+            var that = this;
+            this.$('.job-events').droppable({
+                accept: '.event-edit',
+                activeClass: 'drop-active',
+                hoverClass: 'drop-hover',
+                drop: function(e, ui) {
+                    var events = that.model.get('events');
+                    var event_id = ui.helper.data('id');
+                    if (!_.some(events, function(e) {
+                        return e.id == event_id;
+                    })) {
+                        var new_event = {
+                            id: event_id,
+                            requirement: "r"
+                        };
+                        events.push(new_event);
+                        that.model.set('events', events);
+                        that.render_event(new_event);
+                        that.$('[data-id="' + event_id + '"]').addClass('btn-success');
+                    } else {
+                        that.$('[data-id="' + event_id + '"]').addClass('btn-success');
+                        // provide visual feedback that a duplicate exists.
+                    }
+                    var animateNew = window.setTimeout(function() {
+                        that.$('.btn-success').removeClass('btn-success').addClass('btn-default');
+                    }, 200);
+                }
             });
             return this;
         }
     });
-    var JobEditView = ContentEditableView.extend({
+    var JobEditView = HasEventsChildrenView.extend({
         className: "job-edit panel panel-default",
         template: _.template($('#job-editview-template').html()),
-        initialize: function() {
-        },
         render: function() {
-            var json = this.model.toJSON();
-            this.$el.html(this.template(json));
-            _.each(json.events, this.render_event, this);
-            _.each(json.people, this.render_person, this);
+            this.set_event_droppable();
+            _.each(this.model.toJSON().people, this.render_person, this);
             var that = this;
             this.$('.job-people').droppable({
                 accept: '.person-edit',
@@ -744,55 +908,31 @@ $(function(){
                         people.push(username);
                         that.model.set('people', people);
                         that.render_person(username);
+                        that.$('[data-username="' + username + '"]').addClass('btn-success');
                     } else {
-                        // provide visual feedback that a duplicate exists.
+                        that.$('[data-username="' + username + '"]').addClass('btn-success');
                     }
-                }
-            });
-            this.$('.job-events').droppable({
-                accept: '.event-edit',
-                activeClass: 'drop-active',
-                hoverClass: 'drop-hover',
-                drop: function(e, ui) {
-                    var events = that.model.get('events');
-                    var event_id = ui.helper.data('id');
-                    if (!_.some(events, function(e) {
-                        return e.id == event_id;
-                    })) {
-                        console.log(events);
-                        var new_event = {
-                            id: event_id,
-                            requirement: "r"
-                        };
-                        events.push(new_event);
-                        that.model.set('events', events);
-                        that.render_event(new_event);
-                    } else {
-                        // provide visual feedback that a duplicate exists.
-                    }
+                    var animateNew = window.setTimeout(function() {
+                        that.$('.btn-success').removeClass('btn-success').addClass('btn-default');
+                    }, 200);
                 }
             });
             return this;
         },
-        render_event: function(e) {
-            var child = all_events.findWhere({'id': e.id});
-            this.spawn_child(MiniEventEditView, child).$el.appendTo(this.$('.job-events'));
-        },
         render_person: function(p) {
             var child = all_people.findWhere({'username': p});
-            this.spawn_child(MiniPersonEditView, child).$el.appendTo(this.$('.job-people'));
+            this.spawn_child(MiniPersonEditView, child, '.job-people');
+        },
+        remove_model: function() {
+            all_jobs.remove(this.model);
+            this.remove();
         }
     });
-    var PersonEditView = ContentEditableView.extend({
-        className: "person-edit",
+    var PersonEditView = HasEventsChildrenView.extend({
+        className: "person-edit panel panel-default",
         template: _.template($('#person-editview-template').html()),
         render: function() {
-            var json = this.model.toJSON();
-            this.$el.html(this.template(json));
-            _.each(json.events, function(e) {
-                var child = all_events.findWhere({'id': e.id});
-                this.spawn_child(MiniEventEditView, child).$el.appendTo(this.$('.job-events'));
-            }, this);
+            this.set_event_droppable();
             var that = this;
             this.$el.draggable({
                 opacity: 0.7,
@@ -804,9 +944,15 @@ $(function(){
                     top: 10,
                     left: 10
                 },
+                scroll: true,
+                scrollSensitivity: 100,
             });
             return this;
         },
+        remove_model: function() {
+            all_people.remove(this.model);
+            this.remove();
+        }
     });
     var ContentSelectableView = Backbone.View.extend({
         events: {
@@ -821,9 +967,6 @@ $(function(){
         render: function() {
             this.$el.html(this.template(this.model.toJSON()));
             var that = this;
-            var animateNew = window.setTimeout(function() {
-                that.$('.btn-success').removeClass('btn-success').addClass('btn-default');
-            }, 200);
             return this;
         },
         select: function(e) {
@@ -852,6 +995,45 @@ $(function(){
         },
         choose_requirement: function(e) {
             var chooseview = new ChooseRequirementView({parent: this}).render(e);
+            return this;
+        }
+    });
+    var MiniPersonEditView = ContentSelectableView.extend({
+        className: 'minipersonedit',
+        template: _.template($('#miniperson-editview-template').html()),
+        initialize: function() {
+            this.listenTo(this.model, 'change:username', this.render);
+            this.listenTo(this.model, 'remove', this.remove);
+        },
+        removeFromParent: function() {
+            var parent = this.options.parent;
+            parent.set('people', _.without(parent.get('people'), this.model.get('username')));
+            return this;
+        }
+    });
+    var MiniEventEditView = ContentSelectableView.extend({
+        className: 'minieventedit',
+        template: _.template($('#minievent-editview-template').html()),
+        initialize: function(options) {
+            this.listenTo(this.model, 'change:name', this.render);
+            this.listenTo(this.model, 'remove', this.remove);
+        },
+        render: function() {
+            var json = this.model.toJSON();
+            // look at the parents events, find the one with an id matching this model's and get it's requirement
+            var parent_event = _.findWhere(this.options.parent.get('events'), {'id': this.model.get('id')});
+            if (parent_event) {
+                json['requirement'] = parent_event.requirement;
+                this.$el.html(this.template(json));
+                var that = this;
+            }
+            return this;
+        },
+        removeFromParent: function() {
+            var parent = this.options.parent;
+            parent.set('events', _.reject(parent.get('events'), function(e) {
+                return e.id == this.model.get('id');
+            }, this));
             return this;
         }
     });
@@ -896,60 +1078,21 @@ $(function(){
                 }
             });
             parent_event_parent.set('events', new_events);
+            this.options.parent.render();
             return this.remove();
         },
         el_blur: function() {
             this.remove();
         },
         remove: function() {
-            // OVERRIDDEN TO REMOVE CHILDREN
             $('body').off('click');
             this.$el.remove();
             this.stopListening();
             return this;
         }
     });
-    var MiniPersonEditView = ContentSelectableView.extend({
-        className: 'minipersonedit',
-        template: _.template($('#miniperson-editview-template').html()),
-        initialize: function() {
-            this.listenTo(this.model, 'change:username', this.render);
-        },
-        removeFromParent: function() {
-            var parent = this.options.parent;
-            parent.set('people', _.without(parent.get('people'), this.model.get('username')));
-            return this;
-        }
-    });
-    var MiniEventEditView = ContentSelectableView.extend({
-        className: 'minieventedit',
-        template: _.template($('#minievent-editview-template').html()),
-        initialize: function(options) {
-            this.listenTo(this.model, 'change:name', this.render);
-            this.listenTo(options.parent, 'change:events', this.render);
-        },
-        render: function() {
-            console.log('rendering mini event');
-            var json = this.model.toJSON();
-            // look at the parents events, find the one with an id matching this model's and get it's requirement
-            json['requirement'] = _.findWhere(this.options.parent.get('events'), {'id': this.model.get('id')}).requirement;
-            this.$el.html(this.template(json));
-            var that = this;
-            var animateNew = window.setTimeout(function() {
-                that.$('.btn-success').removeClass('btn-success').addClass('btn-default');
-            }, 200);
-            return this;
-        },
-        removeFromParent: function() {
-            var parent = this.options.parent;
-            parent.set('events', _.reject(parent.get('events'), function(e) {
-                return e.id == this.model.get('id');
-            }, this));
-            return this;
-        }
-    });
 
-    // empty state - essentially a 404
+    // empty state - a 404
     var EmptyState = Backbone.View.extend({
         render: function() {
             data = location.hash.split('/');
@@ -1067,9 +1210,10 @@ $(function(){
     var e_req = all_events.fetch();
     var j_req = all_jobs.fetch();
     var p_req = all_people.fetch();
+    var App;
     $.when(e_req, j_req, p_req).done(function() {
         // App!
-        var App = new AppView;
+        App = new AppView;
 
         $('.tooltip-trigger').tooltip();
 
@@ -1084,5 +1228,4 @@ $(function(){
     });
     // make mobile taps feel more responsive
     FastClick.attach(document.body);
-
 });
