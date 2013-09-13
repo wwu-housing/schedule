@@ -392,7 +392,6 @@ $(function(){
 
             // from the collection of jobs, find any for this person
             this.jobs = _.filter(all_jobs.models, function(j) {
-                var j_people = j.get('people');
                 return _.contains(j.get('people'), this.model.get('username'));
             }, this);
 
@@ -529,12 +528,13 @@ $(function(){
                 this.data = {};
                 // get all event data
                 this.data['events'] = all_events.toJSON();
+                var all_staff_events = all_jobs.findWhere({'name': 'All Staff'}).get('events');
                 // for each event...
                 _.each(this.data.events, function(e, e_i) {
                     // put event data for each person in it...
                     e_p = all_people.map(function(p) {
                         // get only data for this event
-                        var test = _.findWhere(p.toJSON().events, { id: e_i });
+                        var test = _.findWhere(p.toJSON().events, { id: e.id });
                         if (test) {
                             return test.requirement;
                         } else {
@@ -548,18 +548,26 @@ $(function(){
                         var username = all_people.at(p_i).get('username');
 
                         // from the collection of jobs, find any for this person
-                        var jobs = _.filter(all_jobs.models, function(j) {
-                            var j_people = j.get('people');
-                            return _.contains(j.get('people'), username);
+                        var jobs = all_jobs.filter(function(j) {
+                            if (j.get('name') == "All Staff") {
+                                return false;
+                            } else {
+                                return _.contains(j.get('people'), username);
+                            }
                         }, this);
 
                         // for each job this person is in...
                         _.each(jobs, function(j) {
-                            // reduce the job to just the event we need to know about if it's there
-                            j = _.findWhere(j.toJSON().events, {id: e_i});
-                            if (j) {
-                                if (p == '') {
-                                    p_list[p_i] = j.requirement;
+                            if (p == '') {
+                                // reduce the job to just the event we need to know about if it's there
+                                var j_event = _.findWhere(j.get('events'), {id: e.id });
+                                if (j_event) {
+                                    p_list[p_i] = j_event.requirement;
+                                } else {
+                                    var all_req = _.findWhere(all_staff_events, {id: e.id});
+                                    if (all_req) {
+                                        p_list[p_i] = all_req.requirement;
+                                    }
                                 }
                             }
                         }, this);
@@ -568,11 +576,16 @@ $(function(){
                     // put event data for each job in the event
                     e_j = all_jobs.map(function(j) {
                         // get only data for this event
-                        var test = _.findWhere(j.toJSON().events, { id: e_i });
+                        var test = _.findWhere(j.toJSON().events, {id: e.id});
                         if (test) {
                             return test.requirement;
                         } else {
-                            return '';
+                            var all_req = _.findWhere(all_staff_events, {id: e.id});
+                            if (all_req) {
+                                return all_req.requirement;
+                            } else {
+                                return '';
+                            }
                         }
                     });
                     e['j_data'] = e_j;

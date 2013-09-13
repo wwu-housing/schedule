@@ -42,6 +42,13 @@ h2 {
     border-left: 0.2em dotted #ccc;
     padding-left: 0.2em;
 }
+tr.day {
+    text-align: left;
+    border-left: none;
+}
+tr.day h4 {
+    padding-left: .4em;
+}
 .day-of-week {
     margin-left: 0.4em;
 }
