@@ -363,7 +363,7 @@
     </script>
     <script type="text/template" id="minievent-editview-template">
         <span class="selectable btn btn-default btn-xs" data-attr="name" data-id="<%- id %>">
-            <span class="text-<%- requirements_list[requirement].label %>" title="<%- requirements_list[requirement].description %>"><%- name %></span>
+            <span class="text-<%- requirements_list[requirement].label %>" title="<%- time.start.format("MMM Do h:mm a") %>"><%- name %></span>
             <span class="tools">
                 <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                 <span class="choose-requirement glyphicon glyphicon-edit"></span>
