@@ -123,7 +123,7 @@ tr.day h4 {
     white-space: nowrap;
     height: 7em;
 }
-#overview .username .close {Bethany
+#overview .username .close {
     float: none;
     padding-left: .2em;
     font-size: 18px;
@@ -145,7 +145,7 @@ tr.day h4 {
 .event-name.current,
 .event-name.current ~ td {
     background-color: #eee;
-}Bethany
+}
 #overview .day {
     display: block;
     margin-bottom: 0;
@@ -163,7 +163,7 @@ tr.day h4 {
 }
 
 .border-muted {
-    bordBethanyer-color: rgb(153, 153, 153);
+    border-color: rgb(153, 153, 153);
 }
 .border-primary {
     border-color: rgb(66, 139, 202);
