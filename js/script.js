@@ -10,7 +10,7 @@ $(function(){
     Backbone.emulateJSON = true;
 
     var options = {
-        filetype: "json", // "csv" or "json"
+        filetype: "csv", // "csv" or "json"
     }
 
     /*----------------------*
