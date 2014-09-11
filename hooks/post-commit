@@ -18,7 +18,7 @@ then
     do
         git reset HEAD
         rm -rf $gitignore
-        git rm $gitignore
+        git rm -rf $gitignore
         git add .gitignore
         git rebase --continue
     done
