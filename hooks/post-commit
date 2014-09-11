@@ -24,6 +24,6 @@ then
     done
 
     git push -f git@github.com:wwu-housing/schedule github:master
-    git push origin github
+    git push -f origin github
     git checkout master
 fi
