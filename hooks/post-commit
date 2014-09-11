@@ -17,12 +17,13 @@ then
     while [ $? -gt 0 ]
     do
         git reset HEAD
-        rm -f $gitignore
+        rm -rf $gitignore
         git rm $gitignore
         git add .gitignore
         git rebase --continue
     done
 
     git push -f git@github.com:wwu-housing/schedule github:master
+    git push origin github
     git checkout master
 fi
