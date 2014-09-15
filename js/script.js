@@ -464,8 +464,12 @@ $(function(){
                     j_e = j_e.requirement;
                     _.each(j.get('people'), function(p) {
                         var this_p = this.people.findWhere({'username': p});
-                        if (!this_p.get('requirement')) {
-                            this_p.set('requirement', j_e);
+                        if (this_p) {
+                            if (!this_p.get('requirement')) {
+                                this_p.set('requirement', j_e);
+                            }
+                        } else {
+                            console.warn("Couldn't find person " + p);
                         }
                     }, this);
                 }
