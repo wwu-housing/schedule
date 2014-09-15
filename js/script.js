@@ -1,4 +1,8 @@
 $(function(){
+    moment.parseTwoDigitYear = function(input) {
+        return parseInt(input) + 2000;
+    }
+
     var methodMap = {
         'create': 'POST',
         'update': 'PUT',
@@ -97,10 +101,8 @@ $(function(){
                             _.each(keys, function(key, i) {
                                 // the key indicates that it's supposed to be nested
                                 if (key.indexOf('--') > 0) {
-                                    console.log(line_array[i]);
                                     if (line_array[i] && line_array[i] !== "" && line_array[i] !== " ") {
                                         var key_p = key.split('--');
-                                        console.log(key_p[1]);
                                         object[key_p[0]] = object[key_p[0]] || [];
                                         object[key_p[0]].push({
                                             "id": +key_p[1],
@@ -117,7 +119,10 @@ $(function(){
                                     // convert date to a moment object
                                     var val = line_array[i];
                                     if (key.indexOf("time") < 1) {
-                                        val = new moment(val);
+                                        val = new moment(val, "M/D/YY H:mm");
+                                        if (val.year() < 2000) {
+                                            val.add(100, 'years');
+                                        }
                                     }
                                     // loop through levels
                                     _.each(key_p, function(key_l, key_i) {
@@ -352,7 +357,7 @@ $(function(){
                     single_e['height'] = height;
                     this.e_data.push(single_e);
                 } else {
-                    console.log("Event " + e.id + " was not found.");
+                    console.warn("Event " + e.id + " was not found.");
                 }
             }, this);
             // group by day
@@ -718,7 +723,7 @@ $(function(){
             this.toggle_delete();
         },
         bulk_change: function() {
-            console.log('not implemented');
+            console.warn('not implemented');
         },
         json_replacer: function(key, value) {
             if (key == "filler" || key == "filler\r") {
@@ -826,7 +831,7 @@ $(function(){
             this.$el.draggable('enable');
         },
         remove_model: function() {
-            console.log('Remove model!');
+            console.warn('Remove model!');
         },
         add_remove_warn: function(e) {
             this.$el.addClass('panel-danger').removeClass('panel-default');
