@@ -278,9 +278,10 @@ $(function(){
         show_overview: function() {
             appRouter.navigate("overview", {trigger: true});
         },
-        scrollTo: function(e, target_id) {
+        scrollTo: function(e, target) {
             e.preventDefault();
-            var target = $(target_id).offset().top - 10;
+            console.log(target);
+            var target = target.offset().top - 10;
             var duration = (target - this.$el.scrollTop()) * 0.3;
             this.$el.animate({
                 scrollTop: target
@@ -288,7 +289,7 @@ $(function(){
         },
         scroll_down: function(e) {
             // scroll to the sidebar
-            this.scrollTo(e, '#side');
+            this.scrollTo(e, $('#side'));
         },
         scroll_up: function() {
             var duration = this.$el.scrollTop() * 0.4;
@@ -297,13 +298,13 @@ $(function(){
             }, duration);
         },
         scroll_person: function(e) {
-            this.scrollTo(e, '#all_people_label');
+            this.scrollTo(e, $('#all_people_label'));
         },
         scroll_job: function(e) {
-            this.scrollTo(e, '#all_jobs_label');
+            this.scrollTo(e, $('#all_jobs_label'));
         },
         scroll_other: function(e) {
-            this.scrollTo(e, '#show_events');
+            this.scrollTo(e, $('#show_events'));
         },
         show_edit: function() {
             appRouter.navigate("edit", {trigger: true});
@@ -670,7 +671,8 @@ $(function(){
     // edit view
     var HasChildrenView = Backbone.View.extend({
         spawn_child: function(view_type, model, target) {
-            var new_child = new view_type({model: model, parent: this.model}).render().$el.appendTo(this.$(target));
+            var new_child = new view_type({model: model, parent: this.model}).render();
+            new_child.$el.appendTo(this.$(target));
             this.children = this.children || [];
             this.children.push(new_child);
             return new_child;
@@ -750,8 +752,9 @@ $(function(){
             attributes['id'] = new_id;
             var new_model = new model(attributes);
             collection.add(new_model);
-            this.spawn_child(view, new_model, parent_container);
-            App.scrollTo(e, this.$(parent_container).find('.panel').last());
+            var new_child = this.spawn_child(view, new_model, parent_container);
+            console.log(new_child);
+            App.scrollTo(e, new_child.$el);
         },
         new_event: function(e) {
             var attributes = {
