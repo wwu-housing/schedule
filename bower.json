@@ -1,0 +1,35 @@
+{
+  "name": "schedule",
+  "keywords": [
+    "schedule",
+    "static",
+    "web-based",
+    "mobile-friendly",
+    "mobile"
+  ],
+  "version": "1.1.0",
+  "ignore": [
+    "json/*",
+    "csv/*",
+    "hooks",
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "libs",
+    "test",
+    "tests"
+  ],
+  "authors": [
+    "Cameron Little <cameron@camlittle.com>"
+  ],
+  "description": "\"Backbone powered, static, mobile-friendly scheduling app.\"",
+  "license": "MIT",
+  "dependencies": {
+    "jquery": "~2.1.1",
+    "backbone": "~1.1.2",
+    "bootstrap": "~3.2.0",
+    "moment": "~2.8.3",
+    "fastclick": "~1.0.3",
+    "draggabilly": "~1.1.0"
+  }
+}
