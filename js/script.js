@@ -989,6 +989,10 @@ $(function(){
             'click .selected': 'unselect',
         },
         tagName: 'li',
+        initialize: function(options) {
+            this.options = options;
+            return this;
+        },
         render: function() {
             this.$el.html(this.template(this.model.toJSON()));
             var that = this;
@@ -1026,9 +1030,11 @@ $(function(){
     var MiniPersonEditView = ContentSelectableView.extend({
         className: 'minipersonedit',
         template: _.template($('#miniperson-editview-template').html()),
-        initialize: function() {
+        initialize: function(options) {
             this.listenTo(this.model, 'change:username', this.render);
             this.listenTo(this.model, 'remove', this.remove);
+            this.options = options;
+            return this;
         },
         removeFromParent: function() {
             var parent = this.options.parent;
@@ -1042,6 +1048,8 @@ $(function(){
         initialize: function(options) {
             this.listenTo(this.model, 'change:name', this.render);
             this.listenTo(this.model, 'remove', this.remove);
+            this.options = options;
+            return this;
         },
         render: function() {
             var json = this.model.toJSON();
@@ -1068,6 +1076,10 @@ $(function(){
         events: {
             'click li': 'choose',
             'blur': 'el_blur'
+        },
+        initialize: function(options) {
+            this.options = options;
+            return this;
         },
         render: function(e) {
             this.$el.html('<ul class="list-unstyled"></ul>').appendTo('body').css({
