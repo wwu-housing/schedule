@@ -701,14 +701,26 @@ $(function(){
         render: function() {
             this.$el.html(this.template());
             all_events.each(function(e) {
-                this.spawn_child(EventEditView, e, '#edit-col-events');
+                this.spawn_child(EventEditView, e, '#edit-col-events .contents');
             }, this);
             all_jobs.each(function(j) {
-                this.spawn_child(JobEditView, j, '#edit-col-jobs');
+                this.spawn_child(JobEditView, j, '#edit-col-jobs .contents');
             }, this);
             all_people.each(function(p) {
-                this.spawn_child(PersonEditView, p, '#edit-col-people');
+                this.spawn_child(PersonEditView, p, '#edit-col-people .contents');
             }, this);
+
+            var that = this;
+            setTimeout(function() {
+                var h = window.innerHeight,
+                    c = that.$el.find('.contents'),
+                    t = c.first().offset().top;
+                console.log(c.first().get(0).getBoundingClientRect());
+
+                $('#edit-col-events .contents').css({
+                    'max-height': h - t - 45,
+                }).affix();
+            }, 200);
             return this;
         },
         toggle: function(button, target) {
@@ -745,7 +757,6 @@ $(function(){
                 .find('pre').html('<div class="form-group"><label>events.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_events.toJSON(), this.json_replacer) +
                                   '</textarea></div><div class="form-group"><label>jobs.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_jobs.toJSON(), this.json_replacer) +
                                   '</textarea></div><div class="form-group"><label>people.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_people.toJSON(), this.json_replacer) + '</textarea></div>');
-
         },
         new_x: function(model, attributes, collection, view, parent_container, e) {
             var new_id = _.max(collection.pluck('id')) + 1;
