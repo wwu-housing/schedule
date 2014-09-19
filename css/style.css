@@ -304,10 +304,3 @@ a.unstyled {
     outline: #ddd dashed;
     min-height: 2em;
 }
-#edit-col-events .contents {
-    overflow-y: scroll;
-    -webkit-overflow-scrolling: touch;
-}
-#edit-col-events .contents.affix {
-    width: 23.44444%;
-}

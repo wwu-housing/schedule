@@ -709,18 +709,6 @@ $(function(){
             all_people.each(function(p) {
                 this.spawn_child(PersonEditView, p, '#edit-col-people .contents');
             }, this);
-
-            var that = this;
-            setTimeout(function() {
-                var h = window.innerHeight,
-                    c = that.$el.find('.contents'),
-                    t = c.first().offset().top;
-                console.log(c.first().get(0).getBoundingClientRect());
-
-                $('#edit-col-events .contents').css({
-                    'max-height': h - t - 45,
-                }).affix();
-            }, 200);
             return this;
         },
         toggle: function(button, target) {
