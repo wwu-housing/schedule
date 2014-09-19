@@ -65,9 +65,13 @@ tr.day h4 {
 }
 .event.past {
     opacity: 0.5;
+    min-height: 0 !important;
 }
 .event.past .label {
     opacity: 0;
+}
+.event.past .details {
+    display: none;
 }
 .event.past:hover {
     opacity: .8;

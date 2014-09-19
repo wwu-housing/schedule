@@ -1268,6 +1268,22 @@ $(function(){
         // Start router and navigation
         Backbone.history.start();
     });
+    function startTimer() {
+        return setInterval(function() {
+            now = new moment();
+            $('.event').each(function() {
+                var $el = $(this),
+                    start = new moment($el.data('start')),
+                    end = new moment($el.data('end'));
+                if (start.isBefore(now) && end.isAfter(now)) {
+                    $el.addClass('current');
+                } else if (end.isBefore(now)) {
+                    $el.addClass('past');
+                }
+            });
+        }, 10000);
+    }
+    var timer = startTimer();
     // identify scrolling as a user action and stops the animation
     $(document).on("scroll mousedown DOMMouseScroll mousewheel keyup", function(e){
         if ( e.which > 0 || e.type === "mousedown" || e.type === "mousewheel") {
