@@ -11,12 +11,6 @@ $(function(){
         'read': 'GET'
     };
 
-    Backbone.emulateJSON = true;
-
-    var options = {
-        filetype: "json", // "csv" or "json"
-    }
-
     /*----------------------*
      *   Helper Functions   |
      *----------------------*/
@@ -33,9 +27,13 @@ $(function(){
      *------------*/
     var HasEventsModel = Backbone.Model.extend({
         check_events: function(model) {
-            this.set('events', _.reject(this.get('events'), function(e) {
+            if (_.some(this.get('events'), function(e) {
                 return e.id == model.get('id');
-            }));
+            })) {
+                this.save('events', _.reject(this.get('events'), function(e) {
+                    return e.id == model.get('id');
+                }));
+            };
         },
     });
     var Job = HasEventsModel.extend({
@@ -45,7 +43,9 @@ $(function(){
             this.listenTo(all_events, 'remove', this.check_events);
         },
         check_people: function(model) {
-            this.set('people', _.without(this.get('people'), model.get('username')));
+            if (_.contains(this.get('people'), model.get('username'))) {
+                this.save('people', _.without(this.get('people'), model.get('username')));
+            }
         },
     });
     var Person = HasEventsModel.extend({
@@ -58,151 +58,20 @@ $(function(){
     /*-----------------*
      |   Collections   |
      *-----------------*/
-    var AppCollection;
-    switch (options.filetype) {
-        case "csv":
-            AppCollection = Backbone.Collection.extend({
-                sync: function(method, model, options) {
-                    var type = methodMap[method];
-
-                    // Default options, unless specified.
-                    _.defaults(options || (options = {}), {
-                        emulateHTTP: Backbone.emulateHTTP,
-                        emulateJSON: Backbone.emulateJSON
-                    });
-
-                    // Default JSON-request options.
-                    var params = {type: type};
-
-                    // Ensure that we have a URL.
-                    if (!options.url) {
-                        params.url = _.result(model, 'url') || urlError();
-                    }
-
-                    // Don't process data on a non-GET request.
-                    if (params.type !== 'GET' && !options.emulateJSON) {
-                        params.processData = false;
-                    }
-
-                    // Make the request, allowing the user to override any Ajax options.
-                    var xhr = options.xhr = Backbone.ajax(_.extend(params, options));
-                    model.trigger('request', model, xhr, options);
-                    return xhr;
-                },
-                parse: function(response) {
-                    var json = [];
-                    var text = response.replace(',,', ', ,', "gm");
-                    var lines = text.split('\n');
-                    var keys = lines.shift().split(',');
-                    _.each(lines, function(line) {
-                        var line_array = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-                        if (line_array && line_array.length > 1) {
-                            var object = {};
-                            _.each(keys, function(key, i) {
-                                // the key indicates that it's supposed to be nested
-                                if (key.indexOf('--') > 0) {
-                                    if (line_array[i] && line_array[i] !== "" && line_array[i] !== " ") {
-                                        var key_p = key.split('--');
-                                        object[key_p[0]] = object[key_p[0]] || [];
-                                        object[key_p[0]].push({
-                                            "id": +key_p[1],
-                                            "requirement": line_array[i]
-                                        });
-                                    }
-                                } else if (key.indexOf('-') > 0) {
-                                    // split the key into it's levels
-                                    var key_p = key.split('-');
-                                    // find how deep it goes
-                                    var depth = key_p.length - 1;
-                                    // save a reference to the level we're on.
-                                    var level_on = object;
-                                    // convert date to a moment object
-                                    var val = line_array[i];
-                                    if (key.indexOf("time") < 1) {
-                                        val = new moment(val, "M/D/YY H:mm");
-                                        if (val.year() < 2000) {
-                                            val.add(100, 'years');
-                                        }
-                                    }
-                                    // loop through levels
-                                    _.each(key_p, function(key_l, key_i) {
-                                        // if we're at the bottom, set it to the csv value
-                                        if (key_i == depth) {
-                                            level_on = level_on[key_l] = val;
-                                        } else { // otherwise, move down the tree
-                                            level_on = level_on[key_l] = level_on[key_l] || {};
-                                        }
-                                    });
-                                } else {
-                                    // remove surrounding quotes from strings with them
-                                    if (new RegExp(/(".*?")/g).test(line_array[i])) {
-                                        line_array[i] = line_array[i].substring(1, line_array[i].length - 1);
-                                    }
-                                    var val = line_array[i];
-                                    // special cases
-                                    switch (key) {
-                                        case "id": // convert ids to numbers
-                                            val = +val;
-                                            break;
-                                        case "events": // parse events (sytax: "id:code, id:code")
-                                            if (val) {
-                                                // split into array by comma
-                                                var events = val.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-                                                // convert to array of objects with id and requirement
-                                                events = _.map(events, function(e) {
-                                                    var ret = {};
-                                                    var event_data = e.split(":");
-                                                    ret['id'] = +event_data[0];
-                                                    ret['requirement'] = event_data[1];
-                                                    return ret;
-                                                });
-                                            }
-                                            // reject values with null requirements (can happen if there's an extra comma at the end of the events string)
-                                            events = _.reject(events, function(e) {
-                                                return !(e.requirement && e.requirement.replace(/^\s\s*/, '').replace(/\s\s*$/, ''));
-                                            });
-                                            val = events;
-                                            break;
-                                        case "people":
-                                            // create array of people
-                                            val = val.split(' ');
-                                            val = _.reject(val, function(e) {
-                                                return !(e.replace(/^\s\s*/, '').replace(/\s\s*$/, ''));
-                                            });
-                                            break;
-                                        default:
-                                            ;
-                                    }
-                                    object[key] = val;
-                                }
-                            });
-                            json.push(object);
-                        }
-                    });
-                    return json;
+    var AppCollection = Backbone.Collection.extend({
+        parse: function(response) {
+            _.map(response, function(thing) {
+                if (thing.time) {
+                    thing.time.start = new moment(thing.time.start);
+                    thing.time.end = new moment(thing.time.end);
                 }
+                return thing;
             });
-            break;
-        case "json":
-            AppCollection = Backbone.Collection.extend({
-                parse: function(response) {
-                    _.map(response, function(thing) {
-                        if (thing.time) {
-                            thing.time.start = new moment(thing.time.start);
-                            thing.time.end = new moment(thing.time.end);
-                        }
-                        return thing;
-                    });
-                    return response;
-                }
-            });
-            break;
-        default:
-            alert("You've specified " + options.filetype + " as your filetype. Please change it to csv or json.");
-            break;
-    }
+            return response;
+        }
+    });
     var Jobs = AppCollection.extend({
-        url: options.filetype + "/jobs." + options.filetype,
+        url: "json" + "/jobs." + "json",
         model: Job,
         comparator: function(e) {
             if (e.get('title_sanitized') == "all-staff") {
@@ -212,14 +81,14 @@ $(function(){
         },
     });
     var People = AppCollection.extend({
-        url: options.filetype + "/people." + options.filetype,
+        url: "json" + "/people." + "json",
         model: Person,
         comparator: function(e) {
             return e.get('name');
         },
     });
     var Events = AppCollection.extend({
-        url: options.filetype + "/events." + options.filetype,
+        url: "json" + "/events." + "json",
         model: Event,
         comparator: function(e) {
             return e.get('time').start.valueOf();
@@ -280,7 +149,6 @@ $(function(){
         },
         scrollTo: function(e, target) {
             e.preventDefault();
-            console.log(target);
             var target = target.offset().top - 10;
             var duration = (target - this.$el.scrollTop()) * 0.3;
             this.$el.animate({
@@ -750,9 +618,8 @@ $(function(){
             var new_id = _.max(collection.pluck('id')) + 1;
             attributes['id'] = new_id;
             var new_model = new model(attributes);
-            collection.add(new_model);
+            collection.create(new_model);
             var new_child = this.spawn_child(view, new_model, parent_container);
-            console.log(new_child);
             App.scrollTo(e, new_child.$el);
         },
         new_event: function(e) {
@@ -793,13 +660,7 @@ $(function(){
             'mouseenter .panel-title .close': 'add_remove_warn',
             'mouseleave .panel-title .close': 'hide_remove_warn',
             'dblclick .editable': 'edit',
-            'keypress  .editing': 'save',
-            'focus     .editing': 'save',
-            'input     .editing': 'save',
-            'paste     .editing': 'save',
-            'cut       .editing': 'save',
-            'drop      .editing': 'save',
-            'textInput .editing': 'save',
+            'keypress  .editing': 'keypress',
             'blur .editing': 'done_editing',
         },
         initialize: function() {
@@ -808,24 +669,33 @@ $(function(){
         edit: function(e) {
             $('.editing').removeClass('editing').attr('contenteditable', 'false');
             $('.ui-draggable').draggable('enable');
-            this.$(e.target).addClass('editing').removeClass('text-muted').attr('contenteditable', 'true')
-            this.$el.draggable('disable');
+            var that = this;
+            this.$(e.target).addClass('editing').removeClass('text-muted').attr('contenteditable', 'true');
+            if (this.$el.hasClass('ui-draggable')) {
+                this.$el.draggable('disable');
+            }
+        },
+        keypress: function(e) {
+            if (e.keyCode == 13) {
+                this.done_editing(e);
+                e.preventDefault();
+            }
         },
         save: function(e) {
             $edit_el = this.$(e.target);
             attr = $edit_el.data('attr');
             if (attr == 'start') {
-                this.model.set('time', {
+                this.model.save('time', {
                     'start': new moment($edit_el.text()),
                     'end': this.model.get('time').end
-                });
+                }, {patch: true});
             } else if (attr == 'end') {
-                this.model.set('time', {
+                this.model.save('time', {
                     'start': this.model.get('time').start,
                     'end': new moment($edit_el.text())
                 });
             } else {
-                this.model.set(attr, $edit_el.text());
+                this.model.save(attr, $edit_el.text());
             }
             return $edit_el;
         },
@@ -834,9 +704,11 @@ $(function(){
             if (target.text() && target.text() == "") {
                 target.addClass('text-muted');
             }
-            this.$el.draggable('enable');
+            if (this.$el.hasClass('ui-draggable')) {
+                this.$el.draggable('enable');
+            }
         },
-        remove_model: function() {
+        emove_model: function() {
             console.warn('Remove model!');
         },
         add_remove_warn: function(e) {
@@ -871,6 +743,8 @@ $(function(){
         },
         remove_model: function() {
             all_events.remove(this.model);
+            all_events.sync();
+            this.remove();
             return this;
         }
     });
@@ -899,7 +773,7 @@ $(function(){
                             requirement: "r"
                         };
                         events.push(new_event);
-                        that.model.set('events', events);
+                        that.model.save('events', events);
                         that.render_event(new_event);
                         that.$('[data-id="' + event_id + '"]').addClass('btn-success');
                     } else {
@@ -930,7 +804,7 @@ $(function(){
                     var username = ui.helper.text();
                     if (!_.contains(people, username)) {
                         people.push(username);
-                        that.model.set('people', people);
+                        that.model.save('people', people);
                         that.render_person(username);
                         that.$('[data-username="' + username + '"]').addClass('btn-success');
                     } else {
@@ -1037,7 +911,7 @@ $(function(){
         },
         removeFromParent: function() {
             var parent = this.options.parent;
-            parent.set('people', _.without(parent.get('people'), this.model.get('username')));
+            parent.save('people', _.without(parent.get('people'), this.model.get('username')));
             return this;
         }
     });
@@ -1063,7 +937,7 @@ $(function(){
         },
         removeFromParent: function() {
             var parent = this.options.parent;
-            parent.set('events', _.reject(parent.get('events'), function(e) {
+            parent.save('events', _.reject(parent.get('events'), function(e) {
                 return e.id == this.model.get('id');
             }, this));
             return this;
@@ -1113,7 +987,7 @@ $(function(){
                     return e;
                 }
             });
-            parent_event_parent.set('events', new_events);
+            parent_event_parent.save('events', new_events);
             this.options.parent.render();
             return this.remove();
         },
