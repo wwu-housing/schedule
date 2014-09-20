@@ -615,8 +615,6 @@ $(function(){
                                   '</textarea></div><div class="form-group"><label>people.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_people.toJSON(), this.json_replacer) + '</textarea></div>');
         },
         new_x: function(model, attributes, collection, view, parent_container, e) {
-            var new_id = _.max(collection.pluck('id')) + 1;
-            attributes['id'] = new_id;
             var new_model = new model(attributes);
             collection.create(new_model);
             var new_child = this.spawn_child(view, new_model, parent_container);
@@ -708,8 +706,10 @@ $(function(){
                 this.$el.draggable('enable');
             }
         },
-        emove_model: function() {
-            console.warn('Remove model!');
+        remove_model: function() {
+            this.model.destroy();
+            this.remove();
+            return this;
         },
         add_remove_warn: function(e) {
             this.$el.addClass('panel-danger').removeClass('panel-default');
@@ -739,12 +739,6 @@ $(function(){
                 scroll: true,
                 scrollSensitivity: 100,
             });
-            return this;
-        },
-        remove_model: function() {
-            all_events.remove(this.model);
-            all_events.sync();
-            this.remove();
             return this;
         }
     });
@@ -820,10 +814,6 @@ $(function(){
         render_person: function(p) {
             var child = all_people.findWhere({'username': p});
             this.spawn_child(MiniPersonEditView, child, '.job-people');
-        },
-        remove_model: function() {
-            all_jobs.remove(this.model);
-            this.remove();
         }
     });
     var PersonEditView = HasEventsChildrenView.extend({
@@ -846,10 +836,6 @@ $(function(){
                 scrollSensitivity: 100,
             });
             return this;
-        },
-        remove_model: function() {
-            all_people.remove(this.model);
-            this.remove();
         }
     });
     var ContentSelectableView = Backbone.View.extend({
