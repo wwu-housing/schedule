@@ -66,7 +66,7 @@ class BackboneModel(RESTModel):
         abort(404)
 
     def post(self):
-        m = self.model(**request.json)
+        m = self.model(**self.model.from_dict(request.json))
         self.db.add(m)
         self.db.commit()
         self.db.refresh(m)

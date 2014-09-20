@@ -3,6 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 
+from datetime import datetime
+
 Base = declarative_base()
 
 class Serializer(object):
@@ -14,8 +16,17 @@ class Serializer(object):
             for public_key in self.__public__:
                 value = getattr(self, public_key)
                 if value:
+                    if type(value) is datetime:
+                        value = value.strftime("%Y-%m-%dT%H:%M:%S")
                     dct[public_key] = value
         return dct
+
+    @staticmethod
+    def from_dict(m):
+        """
+        Convert dictionary into proper kwargs for the model constructor.
+        """
+        return m;
 
 person_job = Table('person_job', Base.metadata,
     Column('person_id', Integer, ForeignKey('person.id')),
@@ -39,6 +50,23 @@ class Event(Base, Serializer):
     time_end = Column(DateTime, nullable=False)
     place = Column(String)
     description = Column(String)
+
+    @staticmethod
+    def from_dict(m):
+        m["time_start"] = datetime.strptime(m["time"]["start"][0:19], "%Y-%m-%dT%H:%M:%S")
+        m["time_end"] = datetime.strptime(m["time"]["end"][0:19], "%Y-%m-%dT%H:%M:%S")
+        del m["time"]
+        return m
+
+    def to_dict(self):
+        dct = super(Event, self).to_dict()
+        dct["time"] = {
+                "start": dct["time_start"],
+                "end": dct["time_end"]
+            }
+        del dct["time_start"]
+        del dct["time_end"]
+        return dct
 
 class Job(Base, Serializer):
     __tablename__ = 'job'
