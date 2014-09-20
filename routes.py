@@ -1,5 +1,11 @@
 from bottle import Bottle, abort, request, run
+from models import Person, Event, Job, Base
 from sqlalchemy import create_engine
+
+engine = create_engine('sqlite:///schedule.db')
+Base.metadata.bind = engine
+
+from sqlalchemy.orm import sessionmaker
 
 import json
 
@@ -11,7 +17,10 @@ def jsonRoute(func):
 class RESTModel(object):
     base = None
 
-    def __init__(self, app):
+    def __init__(self, app, db, model):
+        self.db = db
+        self.model = model
+
         if not self.base:
             raise Exception("Please set base to the resource path")
         app.route(self.base, 'GET')(self.get)
@@ -31,6 +40,7 @@ class RESTModel(object):
         abort(405)
 
     def post(self):
+        """Create"""
         abort(405)
 
     def delete(self, id):
@@ -42,16 +52,15 @@ class PeopleModel(RESTModel):
 
     @jsonRoute
     def get(self, id=None):
-        with open('./json/people.json') as f:
-            people = json.load(f)
-
-            if id:
-                if id in people:
-                    return people[id]
-                else:
-                    abort(404)
-            else:
-                return people
+        if id:
+            match = self.db.query(self.model).filter(Person.id == id).all()
+            if len(match) > 1:
+                abort(500)
+            if len(match) == 0:
+                abort(404)
+            return match[0]
+        else:
+            return self.db.query(self.model).all()
 
     def put(self, id):
         with open('/json/people.json') as f:
@@ -64,15 +73,15 @@ class PeopleModel(RESTModel):
         abort(404)
 
     def post(self):
-        with open('/json/people.json') as f:
-            people = json.load(f)
-
-            people
-        abort(405)
+        raise Exception(request.json)
 
     def delete(self, id):
         abort(405)
 
+DBSession = sessionmaker()
+DBSession.bind = engine
+session = DBSession()
+
 app = Bottle()
-people = PeopleModel(app)
+people = PeopleModel(app, session, Person)
 app.run(host='localhost', port='8009', reloader=True);
