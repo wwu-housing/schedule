@@ -1,9 +1,14 @@
-from bottle import abort, request
+from bottle import Bottle, abort, request, run
+from sqlalchemy import create_engine
+
 import json
 
+def jsonRoute(func):
+    def inner(*args, **kwargs):
+        return json.dumps(func(*args, **kwargs))
+    return inner
 
 class RESTModel(object):
-
     base = None
 
     def __init__(self, app):
@@ -35,8 +40,9 @@ class RESTModel(object):
 class PeopleModel(RESTModel):
     base = '/people'
 
-    def get(self, id = None):
-        with open ('./json/people.json') as f:
+    @jsonRoute
+    def get(self, id=None):
+        with open('./json/people.json') as f:
             people = json.load(f)
 
             if id:
@@ -66,3 +72,7 @@ class PeopleModel(RESTModel):
 
     def delete(self, id):
         abort(405)
+
+app = Bottle()
+people = PeopleModel(app)
+app.run(host='localhost', port='8009', reloader=True);
