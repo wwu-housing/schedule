@@ -1,4 +1,4 @@
-from bottle import Bottle, abort, request, run
+from bottle import Bottle, abort, request, run, HTTPResponse
 from models import Person, Event, Job, Base
 from sqlalchemy import create_engine
 
@@ -17,10 +17,7 @@ def jsonRoute(func):
 class RESTModel(object):
     base = None
 
-    def __init__(self, app, db, model):
-        self.db = db
-        self.model = model
-
+    def __init__(self, app):
         if not self.base:
             raise Exception("Please set base to the resource path")
         app.route(self.base, 'GET')(self.get)
@@ -47,41 +44,64 @@ class RESTModel(object):
         abort(405)
 
 
-class PeopleModel(RESTModel):
-    base = '/people'
+class BackboneModel(RESTModel):
+    def __init__(self, app, db):
+        self.db = db
+        super(BackboneModel, self).__init__(app)
+
+    def query(self):
+        return self.db.query(self.model)
 
     @jsonRoute
     def get(self, id=None):
         if id:
-            match = self.db.query(self.model).filter(Person.id == id).all()
-            if len(match) > 1:
-                abort(500)
-            if len(match) == 0:
-                abort(404)
-            return match[0]
+            match = self.query().get(id).to_dict()
+            if match:
+                return match
+            abort(404)
         else:
-            return self.db.query(self.model).all()
+            return [m.to_dict() for m in self.query().all()]
 
-    def put(self, id):
-        with open('/json/people.json') as f:
-            people = json.load(f)
-
-            if id in people:
-                people[id] = request.json
-                return people[id]
-
+    def put(self, id=None):
         abort(404)
 
     def post(self):
-        raise Exception(request.json)
+        m = self.model(**request.json)
+        self.db.add(m)
+        self.db.commit()
+        self.db.refresh(m)
+        response = HTTPResponse(status=201, body=json.dumps(m.to_dict()))
+        response.add_header("Location", "{}/{}".format(self.base, m.id))
+        return response
 
-    def delete(self, id):
+    def delete(self, id=None):
+        m = self.query().get(id)
+        if m:
+            self.db.delete(m)
+            self.db.commit()
+            return HTTPResponse(status=200)
+        else:
+            return HTTPResponse(status=204)
         abort(405)
+
+class PeopleModel(BackboneModel):
+    base = '/people'
+    model = Person
+
+class EventModel(BackboneModel):
+    base = '/events'
+    model = Event
+
+class JobModel(BackboneModel):
+    base = '/jobs'
+    model = Job
 
 DBSession = sessionmaker()
 DBSession.bind = engine
 session = DBSession()
 
 app = Bottle()
-people = PeopleModel(app, session, Person)
+people = PeopleModel(app, session)
+events = EventModel(app, session)
+jobs = JobModel(app, session)
 app.run(host='localhost', port='8009', reloader=True);
