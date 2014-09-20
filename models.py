@@ -8,13 +8,14 @@ Base = declarative_base()
 class Serializer(object):
     __public__ = None
 
-    def to_serializable_dict(self):
-        dict = {}
-        for public_key in self.__public__:
-            value = getattr(self, public_key)
-            if value:
-                dict[public_key] = value
-        return dict
+    def to_dict(self):
+        dct = {}
+        if self.__public__:
+            for public_key in self.__public__:
+                value = getattr(self, public_key)
+                if value:
+                    dct[public_key] = value
+        return dct
 
 person_job = Table('person_job', Base.metadata,
     Column('person_id', Integer, ForeignKey('person.id')),
@@ -23,16 +24,15 @@ person_job = Table('person_job', Base.metadata,
 
 class Person(Base, Serializer):
     __tablename__ = 'person'
+    __public__ = ["id", "name", "username", "events"]
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     username = Column(String, nullable=False)
     events = relationship("personEvent")
 
-    def as_json(self):
-        return json.dumps(self.to_serializable_dict(), cls=ModelEncoder)
-
 class Event(Base, Serializer):
     __tablename__ = 'event'
+    __public__ = ["id", "name", "time_start", "time_end", "place", "description"]
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     time_start = Column(DateTime, nullable=False)
@@ -42,6 +42,7 @@ class Event(Base, Serializer):
 
 class Job(Base, Serializer):
     __tablename__ = 'job'
+    __public__ = ["id", "name", "people", "events"]
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     people = relationship("Person", secondary=person_job)
