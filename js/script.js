@@ -37,10 +37,20 @@ $(function(){
         },
     });
     var Job = HasEventsModel.extend({
+        urlRoot: "/~littlec8/jobs",
         initialize: function() {
             this.set("title_sanitized", this.get("name").replace(' ', '-').toLowerCase());
             this.listenTo(all_people, 'remove', this.check_people);
             this.listenTo(all_events, 'remove', this.check_events);
+        },
+        sync: function(method, model, options) {
+            if (method == 'update' || method == 'create') {
+                var newModel = this.clone();
+                newModel.unset('title_sanitized', {silent: true});
+                return Backbone.sync.call(newModel, method, newModel, options);
+            } else {
+                return Backbone.sync.call(this, method, this, options);
+            }
         },
         check_people: function(model) {
             if (_.contains(this.get('people'), model.get('username'))) {
@@ -49,29 +59,27 @@ $(function(){
         },
     });
     var Person = HasEventsModel.extend({
+        urlRoot: "/~littlec8/people",
         initialize: function() {
             this.listenTo(all_events, 'remove', this.check_events);
-        },
+        }
     });
-    var Event = Backbone.Model.extend();
+    var Event = Backbone.Model.extend({
+        urlRoot: "/~littlec8/events",
+        parse: function(response) {
+            if (response.time) {
+                response.time.start = new moment(response.time.start);
+                response.time.end = new moment(response.time.end);
+            }
+            return response;
+        }
+    });
 
     /*-----------------*
      |   Collections   |
      *-----------------*/
-    var AppCollection = Backbone.Collection.extend({
-        parse: function(response) {
-            _.map(response, function(thing) {
-                if (thing.time) {
-                    thing.time.start = new moment(thing.time.start);
-                    thing.time.end = new moment(thing.time.end);
-                }
-                return thing;
-            });
-            return response;
-        }
-    });
-    var Jobs = AppCollection.extend({
-        url: "json" + "/jobs." + "json",
+    var Jobs = Backbone.Collection.extend({
+        url: "/~littlec8/jobs",
         model: Job,
         comparator: function(e) {
             if (e.get('title_sanitized') == "all-staff") {
@@ -80,15 +88,15 @@ $(function(){
             return e.get('title_sanitized');
         },
     });
-    var People = AppCollection.extend({
-        url: "json" + "/people." + "json",
+    var People = Backbone.Collection.extend({
+        url: "/~littlec8/people",
         model: Person,
         comparator: function(e) {
             return e.get('name');
         },
     });
-    var Events = AppCollection.extend({
-        url: "json" + "/events." + "json",
+    var Events = Backbone.Collection.extend({
+        url: "/~littlec8/events",
         model: Event,
         comparator: function(e) {
             return e.get('time').start.valueOf();
@@ -615,17 +623,22 @@ $(function(){
                                   '</textarea></div><div class="form-group"><label>people.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_people.toJSON(), this.json_replacer) + '</textarea></div>');
         },
         new_x: function(model, attributes, collection, view, parent_container, e) {
-            var new_model = new model(attributes);
-            collection.create(new_model);
-            var new_child = this.spawn_child(view, new_model, parent_container);
-            App.scrollTo(e, new_child.$el);
+            var that = this;
+            var new_model = new model(attributes, {
+                collection: collection,
+            }).save({}, {
+                wait: true,
+                success: function(model) {
+                    App.scrollTo(e, that.spawn_child(view, model, parent_container).$el);
+                }
+            });
         },
         new_event: function(e) {
             var attributes = {
                 name: "New Event",
                 time: {
                     start: new moment(),
-                    end: new moment().add('h', 1)
+                    end: new moment().add(1, 'h')
                 },
                 place: "",
                 description: ""
@@ -662,7 +675,7 @@ $(function(){
             'blur .editing': 'done_editing',
         },
         initialize: function() {
-            this.listenTo(this.model, 'remove', this.remove);
+            this.listenTo(this.model, 'destroy', this.remove);
         },
         edit: function(e) {
             $('.editing').removeClass('editing').attr('contenteditable', 'false');
@@ -708,7 +721,6 @@ $(function(){
         },
         remove_model: function() {
             this.model.destroy();
-            this.remove();
             return this;
         },
         add_remove_warn: function(e) {
