@@ -63,10 +63,30 @@ class BackboneModel(RESTModel):
             return [m.to_dict() for m in self.query().all()]
 
     def put(self, id=None):
+        """
+        This is actually the behavior of patch.
+        """
+        if id:
+            m = self.query().get(id)
+            if m:
+                for key, value in self.model.from_dict(request.json, self.db).items():
+                    # if value being replaced is a model or list of models,
+                    # delete it/them from the database first
+                    if isinstance(value, list):
+                        for val in getattr(m, key):
+                            if issubclass(type(val), Base):
+                                self.db.delete(val)
+                    if issubclass(type(value), Base):
+                        self.db.delete(value)
+                    setattr(m, key, value)
+                self.db.commit()
+                self.db.refresh(m)
+                response = HTTPResponse(status=201, body=json.dumps(m.to_dict()))
+                return response
         abort(404)
 
     def post(self):
-        m = self.model(**self.model.from_dict(request.json))
+        m = self.model(**self.model.from_dict(request.json, self.db))
         self.db.add(m)
         self.db.commit()
         self.db.refresh(m)
@@ -75,14 +95,15 @@ class BackboneModel(RESTModel):
         return response
 
     def delete(self, id=None):
-        m = self.query().get(id)
-        if m:
-            self.db.delete(m)
-            self.db.commit()
-            return HTTPResponse(status=200)
-        else:
-            return HTTPResponse(status=204)
-        abort(405)
+        if id:
+            m = self.query().get(id)
+            if m:
+                self.db.delete(m)
+                self.db.commit()
+                return HTTPResponse(status=200)
+            else:
+                return HTTPResponse(status=204)
+        abort(404)
 
 class PeopleModel(BackboneModel):
     base = '/people'
