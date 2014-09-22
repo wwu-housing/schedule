@@ -137,16 +137,9 @@ class StaticFiles(object):
         if not self.root:
             raise Exception("Please set the static root.")
         app.route('<filename:path>', 'GET')(self.get)
-        app.route('<filename:re:.*\.js>', 'GET')(self.js)
 
     def get(self, filename):
         return static_file(filename, root=self.root)
-
-    def js(self, filename):
-        return static_file(filename, root=self.root, mimetype="application/javascript")
-
-    def css(self, filename):
-        return static_file(filename, root=self.root, mimetype="text/css")
 
 DBSession = sessionmaker()
 DBSession.bind = engine
