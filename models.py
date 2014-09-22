@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Table, ForeignKey, Integer, String, DateTime, PrimaryKeyConstraint
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 
@@ -40,7 +40,6 @@ class Person(Base, Serializer):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     username = Column(String, unique=True)
-    events = relationship("personEvent")
 
     @staticmethod
     def from_dict(m, db):
@@ -99,8 +98,7 @@ class Job(Base, Serializer):
     __public__ = ["id", "name", "people", "events"]
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-    people = relationship("Person", secondary=person_job)
-    events = relationship("jobEvent", backref='jobs')
+    people = relationship("Person", secondary=person_job, backref="people")
 
     @staticmethod
     def from_dict(m, db):
@@ -130,20 +128,27 @@ class Job(Base, Serializer):
             dct["events"] = [{"requirement": r.requirement, "id": r.event.id} for r in dct["events"]]
         return dct
 
-class jobEvent(Base):
-    __tablename__ = 'jobEvent'
-    event_id = Column(Integer, ForeignKey('event.id'), primary_key=True)
-    event = relationship("Event")
-    requirement = Column(String, nullable=False)
-    job_id = Column(Integer, ForeignKey('job.id'), primary_key=True)
-    job = relationship("Job", backref="job_events")
+class Association(object):
+    pass
 
-class personEvent(Base):
-    __tablename__ = 'personEvent'
-    event_id = Column(Integer, ForeignKey('event.id'), primary_key=True)
+class EventMixin(Association):
+    @declared_attr
+    def event_id(cls):
+        return Column(Integer, ForeignKey('event.id'), primary_key=True)
+    @declared_attr
+    def event(cls):
+        return relationship("Event")
     requirement = Column(String, nullable=False)
+
+class jobEvent(EventMixin, Base):
+    __tablename__ = 'jobEvent'
+    job_id = Column(Integer, ForeignKey('job.id'), primary_key=True)
+    job = relationship("Job", backref="events")
+
+class personEvent(EventMixin, Base):
+    __tablename__ = 'personEvent'
     person_id = Column(Integer, ForeignKey('person.id'), primary_key=True)
-    event = relationship("Event")
+    person = relationship("Person", backref="events")
 
 engine = create_engine('sqlite:///schedule.db')
 Base.metadata.create_all(engine)

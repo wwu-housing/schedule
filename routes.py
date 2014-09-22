@@ -1,5 +1,5 @@
 from bottle import Bottle, abort, request, run, HTTPResponse
-from models import Person, Event, Job, Base
+from models import Person, Event, Job, Base, Association
 from sqlalchemy import create_engine
 
 engine = create_engine('sqlite:///schedule.db')
@@ -31,7 +31,7 @@ class RESTModel(object):
         abort(405)
 
     def put(self, id):
-        abort(405)
+        abort(501)
 
     def patch(self, id):
         abort(405)
@@ -63,9 +63,18 @@ class BackboneModel(RESTModel):
             return [m.to_dict() for m in self.query().all()]
 
     def put(self, id=None):
-        """
-        This is actually the behavior of patch.
-        """
+        if id:
+            m = self.query().get(id)
+            status = 201
+            if m:
+                status = 200
+            m = self.model()
+            response = self.patch(id)
+            response.status = status
+            return response
+        abort(404)
+
+    def patch(self, id=None):
         if id:
             m = self.query().get(id)
             if m:
@@ -77,15 +86,16 @@ class BackboneModel(RESTModel):
                         newitems = [i for i in value if i not in old]
                         olditems = [i for i in old if i not in value]
                         for item in olditems:
-                            getattr(m, key).remove(item)
-                            # self.db.delete(item)
+                            old.remove(item)
+                            if issubclass(type(item), Association):
+                                self.db.delete(item)
                         for item in newitems:
-                            getattr(m, key).append(item)
+                            old.append(item)
                     else:
                         setattr(m, key, value)
                 self.db.commit()
                 self.db.refresh(m)
-                response = HTTPResponse(status=201, body=json.dumps(m.to_dict()))
+                response = HTTPResponse(status=200, body=json.dumps(m.to_dict()))
                 return response
         abort(404)
 
