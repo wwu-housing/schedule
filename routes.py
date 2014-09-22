@@ -1,18 +1,15 @@
-from bottle import Bottle, abort, request, run, HTTPResponse
+import settings
 from models import Person, Event, Job, Base, Association
+
+from bottle import Bottle, abort, request, run, HTTPResponse, static_file
 from sqlalchemy import create_engine
 
-engine = create_engine('sqlite:///schedule.db')
+engine = create_engine(settings.dbpath)
 Base.metadata.bind = engine
 
 from sqlalchemy.orm import sessionmaker
 
 import json
-
-def jsonRoute(func):
-    def inner(*args, **kwargs):
-        return json.dumps(func(*args, **kwargs))
-    return inner
 
 class RESTModel(object):
     base = None
@@ -52,15 +49,16 @@ class BackboneModel(RESTModel):
     def query(self):
         return self.db.query(self.model)
 
-    @jsonRoute
     def get(self, id=None):
         if id:
             match = self.query().get(id).to_dict()
             if match:
-                return match
+                return json.dumps(match)
             abort(404)
         else:
-            return [m.to_dict() for m in self.query().all()]
+            response = HTTPResponse(status=200, body=json.dumps([m.to_dict() for m in self.query().all()]))
+            response.content_type = "application/json"
+            return response
 
     def put(self, id=None):
         if id:
@@ -96,6 +94,7 @@ class BackboneModel(RESTModel):
                 self.db.commit()
                 self.db.refresh(m)
                 response = HTTPResponse(status=200, body=json.dumps(m.to_dict()))
+                response.content_type = "application/json"
                 return response
         abort(404)
 
@@ -105,6 +104,7 @@ class BackboneModel(RESTModel):
         self.db.commit()
         self.db.refresh(m)
         response = HTTPResponse(status=201, body=json.dumps(m.to_dict()))
+        response.content_type = "application/json"
         response.add_header("Location", "{}/{}".format(self.base, m.id))
         return response
 
@@ -131,12 +131,32 @@ class JobModel(BackboneModel):
     base = '/jobs'
     model = Job
 
+class StaticFiles(object):
+    def __init__(self, app, root=None):
+        self.root = root
+        if not self.root:
+            raise Exception("Please set the static root.")
+        app.route('<filename:path>', 'GET')(self.get)
+        app.route('<filename:re:.*\.js>', 'GET')(self.js)
+
+    def get(self, filename):
+        return static_file(filename, root=self.root)
+
+    def js(self, filename):
+        return static_file(filename, root=self.root, mimetype="application/javascript")
+
+    def css(self, filename):
+        return static_file(filename, root=self.root, mimetype="text/css")
+
 DBSession = sessionmaker()
 DBSession.bind = engine
 session = DBSession()
 
 app = Bottle()
-people = PeopleModel(app, session)
-events = EventModel(app, session)
-jobs = JobModel(app, session)
+
+PeopleModel(app, session)
+EventModel(app, session)
+JobModel(app, session)
+StaticFiles(app, settings.staticroot)
+
 app.run(host='localhost', port='8009', reloader=True);
