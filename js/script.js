@@ -42,6 +42,12 @@ $(function(){
             this.set("title_sanitized", this.get("name").replace(' ', '-').toLowerCase());
             this.listenTo(all_people, 'remove', this.check_people);
             this.listenTo(all_events, 'remove', this.check_events);
+            if (!this.get("events")) {
+                this.set("events", []);
+            }
+            if (!this.get("people")) {
+                this.set("people", []);
+            }
         },
         sync: function(method, model, options) {
             if (method == 'update' || method == 'create') {
@@ -62,6 +68,9 @@ $(function(){
         urlRoot: "/~littlec8/people",
         initialize: function() {
             this.listenTo(all_events, 'remove', this.check_events);
+            if (!this.get("events")) {
+                this.set("events", []);
+            }
         }
     });
     var Event = Backbone.Model.extend({
@@ -629,6 +638,7 @@ $(function(){
             }).save({}, {
                 wait: true,
                 success: function(model) {
+                    collection.add(model);
                     App.scrollTo(e, that.spawn_child(view, model, parent_container).$el);
                 }
             });
@@ -681,7 +691,7 @@ $(function(){
             $('.editing').removeClass('editing').attr('contenteditable', 'false');
             $('.ui-draggable').draggable('enable');
             var that = this;
-            this.$(e.target).addClass('editing').removeClass('text-muted').attr('contenteditable', 'true');
+            this.$(e.target).addClass('editing').removeClass('text-muted').attr('contenteditable', 'true').focus();
             if (this.$el.hasClass('ui-draggable')) {
                 this.$el.draggable('disable');
             }
@@ -697,13 +707,13 @@ $(function(){
             attr = $edit_el.data('attr');
             if (attr == 'start') {
                 this.model.save('time', {
-                    'start': new moment($edit_el.text()),
+                    'start': new moment($edit_el.text() + " +0000", "YYYY-MM-DD HH:mm Z"),
                     'end': this.model.get('time').end
-                }, {patch: true});
+                });
             } else if (attr == 'end') {
                 this.model.save('time', {
                     'start': this.model.get('time').start,
-                    'end': new moment($edit_el.text())
+                    'end': new moment($edit_el.text() + " +0000", "YYYY-MM-DD HH:mm Z")
                 });
             } else {
                 this.model.save(attr, $edit_el.text());
@@ -783,8 +793,13 @@ $(function(){
                         that.render_event(new_event);
                         that.$('[data-id="' + event_id + '"]').addClass('btn-success');
                     } else {
-                        that.$('[data-id="' + event_id + '"]').addClass('btn-success');
+                        if (!that.$('[data-id="' + event_id + '"]').length) {
+                            that.render_event(_.find(events, function(e) {
+                                return e.id == event_id;
+                            }));
+                        }
                         // provide visual feedback that a duplicate exists.
+                        that.$('[data-id="' + event_id + '"]').addClass('btn-success');
                     }
                     var animateNew = window.setTimeout(function() {
                         that.$('.btn-success').removeClass('btn-success').addClass('btn-default');
@@ -824,8 +839,7 @@ $(function(){
             return this;
         },
         render_person: function(p) {
-            var child = all_people.findWhere({'username': p});
-            this.spawn_child(MiniPersonEditView, child, '.job-people');
+            this.spawn_child(MiniPersonEditView, all_people.findWhere({'username': p}), '.job-people');
         }
     });
     var PersonEditView = HasEventsChildrenView.extend({
@@ -890,7 +904,7 @@ $(function(){
             return this;
         },
         removeFromParent: function() {
-            console.log(this.options.parent);
+            ;
             return this;
         },
         choose_requirement: function(e) {
