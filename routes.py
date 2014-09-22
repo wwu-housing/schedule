@@ -73,12 +73,16 @@ class BackboneModel(RESTModel):
                     # if value being replaced is a model or list of models,
                     # delete it/them from the database first
                     if isinstance(value, list):
-                        for val in getattr(m, key):
-                            if issubclass(type(val), Base):
-                                self.db.delete(val)
-                    if issubclass(type(value), Base):
-                        self.db.delete(value)
-                    setattr(m, key, value)
+                        old = getattr(m, key)
+                        newitems = [i for i in value if i not in old]
+                        olditems = [i for i in old if i not in value]
+                        for item in olditems:
+                            getattr(m, key).remove(item)
+                            # self.db.delete(item)
+                        for item in newitems:
+                            getattr(m, key).append(item)
+                    else:
+                        setattr(m, key, value)
                 self.db.commit()
                 self.db.refresh(m)
                 response = HTTPResponse(status=201, body=json.dumps(m.to_dict()))

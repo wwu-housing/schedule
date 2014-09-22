@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Table, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Column, Table, ForeignKey, Integer, String, DateTime, PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
@@ -30,7 +30,8 @@ class Serializer(object):
 
 person_job = Table('person_job', Base.metadata,
     Column('person_id', Integer, ForeignKey('person.id')),
-    Column('job_id', Integer, ForeignKey('job.id'))
+    Column('job_id', Integer, ForeignKey('job.id')),
+    PrimaryKeyConstraint('person_id', 'job_id')
 )
 
 class Person(Base, Serializer):
@@ -44,10 +45,18 @@ class Person(Base, Serializer):
     @staticmethod
     def from_dict(m, db):
         if m.get("events", False):
-            reqs = [(r["id"], personEvent(requirement=r["requirement"])) for r in m["events"]]
-            for (e, req) in reqs:
-                req.event = db.query(Event).get(e)
-            m["events"] = [r[1] for r in reqs]
+            reqs = []
+            newreqs = []
+            for req in m["events"]:
+                pe = db.query(personEvent).get((req["id"], m["id"]))
+                if not pe:
+                    pe = personEvent(requirement=req["requirement"])
+                    pe.event = db.query(Event).get(req["id"])
+                else:
+                    if pe.requirement != req["requirement"]:
+                        pe.requirement = req["requirement"]
+                reqs.append(pe)
+            m["events"] = reqs
         return m
 
     def to_dict(self):
@@ -91,17 +100,26 @@ class Job(Base, Serializer):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     people = relationship("Person", secondary=person_job)
-    events = relationship("jobEvent")
+    events = relationship("jobEvent", backref='jobs')
 
     @staticmethod
     def from_dict(m, db):
         if m.get("people", False):
             m["people"] = list(set(m["people"]))
+            m["people"] = [db.query(Person).filter(Person.username == p)[0] for p in m["people"]]
         if m.get("events", False):
-            reqs = [(r["id"], jobEvent(requirement=r["requirement"])) for r in m["events"]]
-            for (e, req) in reqs:
-                req.event = db.query(Event).get(e)
-            m["events"] = [r[1] for r in reqs]
+            reqs = []
+            newreqs = []
+            for req in m["events"]:
+                je = db.query(jobEvent).get((req["id"], m["id"]))
+                if not je:
+                    je = jobEvent(requirement=req["requirement"])
+                    je.event = db.query(Event).get(req["id"])
+                else:
+                    if je.requirement != req["requirement"]:
+                        je.requirement = req["requirement"]
+                reqs.append(je)
+            m["events"] = reqs
         return m
 
     def to_dict(self):
@@ -115,9 +133,10 @@ class Job(Base, Serializer):
 class jobEvent(Base):
     __tablename__ = 'jobEvent'
     event_id = Column(Integer, ForeignKey('event.id'), primary_key=True)
+    event = relationship("Event")
     requirement = Column(String, nullable=False)
     job_id = Column(Integer, ForeignKey('job.id'), primary_key=True)
-    event = relationship("Event")
+    job = relationship("Job", backref="job_events")
 
 class personEvent(Base):
     __tablename__ = 'personEvent'
