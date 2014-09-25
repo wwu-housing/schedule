@@ -138,7 +138,7 @@ class Jobs(BackboneModel):
 class StaticFiles(object):
     def __init__(self, app, root=None):
         self.root = root
-        if not self.root:
+        if self.root == None:
             raise Exception("Please set the static root.")
         app.route('<filename:path>', 'GET')(self.get)
 

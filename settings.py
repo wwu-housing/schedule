@@ -1,4 +1,4 @@
 dbpath = 'sqlite:///schedule.db'
-staticroot = 'static/'
+staticroot = ''
 port = 8009
 ip = 'localhost'
