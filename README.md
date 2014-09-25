@@ -1,91 +1,58 @@
 # Schedule
 
-Backbone powered scheduling tool.
+Backbone powered scheduling tool. Creates a schedule of events, showing
+attendance requirements according to job or specific person. Web editable,
+with a quick overview available to see all data.
 
-## Dependancies
+Intended for short (around a week long) busy periods, where different people
+have different responsibilities and schedules change frequently.
+
+## Installation
+
+```bash
+git clone git@github.com:wwu-housing/schedule.git
+cd schedule
+mkvirtualenv schedule
+pip install -r requirements.txt
+```
+
+Run with `python app.py`. With the default settings, this will use (or create)
+a sqlite database called `schedule.db` in the current directory and serve
+everything to `localhost:8009`.
+
+## Dependencies
+
+### Javascript
 
 The following libraries are included and used in this tool.
 
 * [Backbone.js](http://backbonejs.org/)
+* [Underscore.js](http://underscorejs.org/)
 * [Bootstrap.js](http://getbootstrap.com)
 * [Moment.js] (http://momentjs.com/)
 * [jQuery](http://jquery.com/)
+* [jQuery UI](http://jqueryui.com/)
+* [Touch Punch](http://touchpunch.furf.com/)
+* [FastClick](https://github.com/ftlabs/fastclick)
+
+### Python
+
+Install through pip using the requirements.txt file.
+
+* [SQLAlchemy](http://www.sqlalchemy.org/)
+* [bottle](http://bottlepy.org)
 
 ## Data
 
-The data for this app can come from either csv or json files.
-
-### csv
-
-csv allows you to modify the data in your schedule with Excell.
-
-The data is located in the `csv/` directory. There's currently a bug preventing
-the files from working as I would like. The workaround is to have a "filler"
-title after the last column in your file.
-
-### json
-
-The data is located in the `json/` directory.
-
-In order to use json, you'll have to make one change. In the `js/script.js` file, change options.filetype to "json".
-
-#### `event.json`
-
-An array of events. Each event looks like the following.
-
-```json
-{
-    "id": 0, // A unique numerical id
-    "name": "Event Name",
-    "time": {
-        "start": "2013-09-18T09:00:00", // ISO formatted datetime
-        "end": "2013-09-18T10:30:00"    // ISO formatted datetime
-    },
-    "place": "Location",
-    "description": "A description of the event"
-}
-```
-
-#### `people.json`
-
-An array of people. Each person looks like the following.
-
-```json
-{
-    "id": 0, // A unique numerical id
-    "name": "Cameron Little", // Person's name
-    "username": "apexskier",  // The person's unique username
-    "events": [ // an array of mini event objects, min length is 0
-        {
-            "id": 0, // id of an event
-            "requirement": "r" // the key specifying this person's requirement of the event
-        },
-        {
-            "id": 4,
-            "requirement": "o"
-        }
-    ]
-}
-```
-
-#### `jobs.json`
-
-An array of jobs. Each job looks like the following.
-
-```json
-{
-    "id": 0, // A unique numerical id
-    "name": "Job Title",
-    "people": ["person1", "apexskier"], // an array of usernames
-    "events": [] // same as events for people
-}
-```
+The data for this app is stored in a sqlite database (currently). The filename
+can be specified in the `settings.py` file.
 
 ### Requirements
 
-The list of requirements is specified within the ``index.html`` file. Each requirement looks like the following.
+The list of requirements is specified within the ``static/index.html`` file.
+Each requirement looks like the following.
 
-```json
+```js
 "key": { // a unique key for the requirement
     "text": "Name", // the short text term
     "label": "danger", // the bootstrap class for this (determines color)
