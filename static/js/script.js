@@ -37,7 +37,7 @@ $(function(){
         },
     });
     var Job = HasEventsModel.extend({
-        urlRoot: "/~littlec8/jobs",
+        urlRoot: "jobs",
         initialize: function() {
             this.set("title_sanitized", this.get("name").replace(' ', '-').toLowerCase());
             this.listenTo(all_people, 'remove', this.check_people);
@@ -65,7 +65,7 @@ $(function(){
         },
     });
     var Person = HasEventsModel.extend({
-        urlRoot: "/~littlec8/people",
+        urlRoot: "people",
         initialize: function() {
             this.listenTo(all_events, 'remove', this.check_events);
             if (!this.get("events")) {
@@ -74,7 +74,7 @@ $(function(){
         }
     });
     var Event = Backbone.Model.extend({
-        urlRoot: "/~littlec8/events",
+        urlRoot: "events",
         parse: function(response) {
             if (response.time) {
                 response.time.start = new moment(response.time.start);
@@ -88,7 +88,7 @@ $(function(){
      |   Collections   |
      *-----------------*/
     var Jobs = Backbone.Collection.extend({
-        url: "/~littlec8/jobs",
+        url: "jobs",
         model: Job,
         comparator: function(e) {
             if (e.get('title_sanitized') == "all-staff") {
@@ -98,14 +98,14 @@ $(function(){
         },
     });
     var People = Backbone.Collection.extend({
-        url: "/~littlec8/people",
+        url: "people",
         model: Person,
         comparator: function(e) {
             return e.get('name');
         },
     });
     var Events = Backbone.Collection.extend({
-        url: "/~littlec8/events",
+        url: "events",
         model: Event,
         comparator: function(e) {
             return e.get('time').start.valueOf();
@@ -131,10 +131,16 @@ $(function(){
         initialize: function() {
             this.listenTo(all_jobs, 'add', this.addJob);
             this.listenTo(all_people, 'add', this.addPerson);
+            this.listenTo(all_jobs, 'reset', this.resetEvent);
+            this.listenTo(all_people, 'reset', this.resetEvent);
+            this.listenTo(all_events, 'reset', this.resetEvent);
 
             // add everything to the sidebar and render this view,
             // it's not controlled by the router so it has to render itself
             this.addAllPeople().addAllJobs().render();
+        },
+        resetEvent: function(collection, options) {
+            collection.sync("update", collection);
         },
         render: function() {
             this.$('#content').text('Nothing has loaded yet...');
@@ -579,6 +585,7 @@ $(function(){
             'click #bulk-delete': 'bulk_delete',
             'click #bulk-change': 'bulk_change',
             'click #generate-json': 'generate_json',
+            'click #import-json': 'import_json',
             'click #new-event': 'new_event',
             'click #new-job': 'new_job',
             'click #new-person': 'new_person',
@@ -616,20 +623,11 @@ $(function(){
         bulk_change: function() {
             console.warn('not implemented');
         },
-        json_replacer: function(key, value) {
-            if (key == "filler" || key == "filler\r") {
-                return undefined;
-            } else if (typeof(value) == 'string') {
-                return value.replace('\r', '');
-            } else {
-                return value;
-            }
-        },
         generate_json: function() {
             this.$('#json').show()
-                .find('pre').html('<div class="form-group"><label>events.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_events.toJSON(), this.json_replacer) +
-                                  '</textarea></div><div class="form-group"><label>jobs.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_jobs.toJSON(), this.json_replacer) +
-                                  '</textarea></div><div class="form-group"><label>people.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_people.toJSON(), this.json_replacer) + '</textarea></div>');
+                .find('pre').html('<div class="form-group"><label>events.json</label><textarea id="events-json" class="form-control" rows="6">' + JSON.stringify(all_events.toJSON()) +
+                                  '</textarea></div><div class="form-group"><label>jobs.json</label><textarea id="jobs-json" class="form-control" rows="6">' + JSON.stringify(all_jobs.toJSON()) +
+                                  '</textarea></div><div class="form-group"><label>people.json</label><textarea id="people-json" class="form-control" rows="6">' + JSON.stringify(all_people.toJSON()) + '</textarea></div>');
         },
         new_x: function(model, attributes, collection, view, parent_container, e) {
             var that = this;
@@ -682,6 +680,7 @@ $(function(){
             'mouseleave .panel-title .close': 'hide_remove_warn',
             'dblclick .editable': 'edit',
             'keypress  .editing': 'keypress',
+            'click .editing': 'editing_click',
             'blur .editing': 'done_editing',
         },
         initialize: function() {
@@ -720,13 +719,18 @@ $(function(){
             }
             return $edit_el;
         },
+        editing_click: function(e) {
+            e.preventDefault();
+        },
         done_editing: function(e) {
-            var target = this.save(e).removeClass('editing').attr('contenteditable', 'false');
-            if (target.text() && target.text() == "") {
-                target.addClass('text-muted');
-            }
-            if (this.$el.hasClass('ui-draggable')) {
-                this.$el.draggable('enable');
+            if (!(e.type != "keypress" && $(e.target).hasClass('editing'))) {
+                var target = this.save(e).removeClass('editing').attr('contenteditable', 'false');
+                if (target.text() && target.text() == "") {
+                    target.addClass('text-muted');
+                }
+                if (this.$el.hasClass('ui-draggable')) {
+                    this.$el.draggable('enable');
+                }
             }
         },
         remove_model: function() {
