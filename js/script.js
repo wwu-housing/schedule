@@ -11,8 +11,6 @@ $(function(){
         'read': 'GET'
     };
 
-    Backbone.emulateJSON = true;
-
     var options = {
         filetype: "json", // "csv" or "json"
     }
@@ -33,9 +31,13 @@ $(function(){
      *------------*/
     var HasEventsModel = Backbone.Model.extend({
         check_events: function(model) {
-            this.set('events', _.reject(this.get('events'), function(e) {
+            if (_.some(this.get('events'), function(e) {
                 return e.id == model.get('id');
-            }));
+            })) {
+                this.set('events', _.reject(this.get('events'), function(e) {
+                    return e.id == model.get('id');
+                }));
+            };
         },
     });
     var Job = HasEventsModel.extend({
@@ -43,17 +45,38 @@ $(function(){
             this.set("title_sanitized", this.get("name").replace(' ', '-').toLowerCase());
             this.listenTo(all_people, 'remove', this.check_people);
             this.listenTo(all_events, 'remove', this.check_events);
+            if (!this.get("events")) {
+                this.set("events", []);
+            }
+            if (!this.get("people")) {
+                this.set("people", []);
+            }
         },
         check_people: function(model) {
-            this.set('people', _.without(this.get('people'), model.get('username')));
+            if (_.contains(this.get('people'), model.get('username'))) {
+                this.set('people', _.without(this.get('people'), model.get('username')));
+            }
         },
     });
     var Person = HasEventsModel.extend({
+        urlRoot: "people",
         initialize: function() {
             this.listenTo(all_events, 'remove', this.check_events);
-        },
+            if (!this.get("events")) {
+                this.set("events", []);
+            }
+        }
     });
-    var Event = Backbone.Model.extend();
+    var Event = Backbone.Model.extend({
+        urlRoot: "events",
+        parse: function(response) {
+            if (response.time) {
+                response.time.start = new moment(response.time.start);
+                response.time.end = new moment(response.time.end);
+            }
+            return response;
+        }
+    });
 
     /*-----------------*
      |   Collections   |
@@ -201,7 +224,7 @@ $(function(){
             alert("You've specified " + options.filetype + " as your filetype. Please change it to csv or json.");
             break;
     }
-    var Jobs = AppCollection.extend({
+    var Jobs = Backbone.Collection.extend({
         url: options.filetype + "/jobs." + options.filetype,
         model: Job,
         comparator: function(e) {
@@ -211,14 +234,14 @@ $(function(){
             return e.get('title_sanitized');
         },
     });
-    var People = AppCollection.extend({
+    var People = Backbone.Collection.extend({
         url: options.filetype + "/people." + options.filetype,
         model: Person,
         comparator: function(e) {
             return e.get('name');
         },
     });
-    var Events = AppCollection.extend({
+    var Events = Backbone.Collection.extend({
         url: options.filetype + "/events." + options.filetype,
         model: Event,
         comparator: function(e) {
@@ -245,10 +268,16 @@ $(function(){
         initialize: function() {
             this.listenTo(all_jobs, 'add', this.addJob);
             this.listenTo(all_people, 'add', this.addPerson);
+            this.listenTo(all_jobs, 'reset', this.resetEvent);
+            this.listenTo(all_people, 'reset', this.resetEvent);
+            this.listenTo(all_events, 'reset', this.resetEvent);
 
             // add everything to the sidebar and render this view,
             // it's not controlled by the router so it has to render itself
             this.addAllPeople().addAllJobs().render();
+        },
+        resetEvent: function(collection, options) {
+            collection.sync("update", collection);
         },
         render: function() {
             this.$('#content').text('Nothing has loaded yet...');
@@ -280,7 +309,6 @@ $(function(){
         },
         scrollTo: function(e, target) {
             e.preventDefault();
-            console.log(target);
             var target = target.offset().top - 10;
             var duration = (target - this.$el.scrollTop()) * 0.3;
             this.$el.animate({
@@ -694,6 +722,7 @@ $(function(){
             'click #bulk-delete': 'bulk_delete',
             'click #bulk-change': 'bulk_change',
             'click #generate-json': 'generate_json',
+            'click #import-json': 'import_json',
             'click #new-event': 'new_event',
             'click #new-job': 'new_job',
             'click #new-person': 'new_person',
@@ -742,25 +771,24 @@ $(function(){
         },
         generate_json: function() {
             this.$('#json').show()
-                .find('pre').html('<div class="form-group"><label>events.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_events.toJSON(), this.json_replacer) +
-                                  '</textarea></div><div class="form-group"><label>jobs.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_jobs.toJSON(), this.json_replacer) +
-                                  '</textarea></div><div class="form-group"><label>people.json</label><textarea class="form-control" rows="6">' + JSON.stringify(all_people.toJSON(), this.json_replacer) + '</textarea></div>');
+                .find('pre').html('<div class="form-group"><label>events.json</label><textarea id="events-json" class="form-control" rows="6">' + JSON.stringify(all_events.toJSON()) +
+                                  '</textarea></div><div class="form-group"><label>jobs.json</label><textarea id="jobs-json" class="form-control" rows="6">' + JSON.stringify(all_jobs.toJSON()) +
+                                  '</textarea></div><div class="form-group"><label>people.json</label><textarea id="people-json" class="form-control" rows="6">' + JSON.stringify(all_people.toJSON()) + '</textarea></div>');
         },
         new_x: function(model, attributes, collection, view, parent_container, e) {
-            var new_id = _.max(collection.pluck('id')) + 1;
-            attributes['id'] = new_id;
-            var new_model = new model(attributes);
+            var that = this;
+            var new_model = new model(attributes, {
+                collection: collection,
+            });
             collection.add(new_model);
-            var new_child = this.spawn_child(view, new_model, parent_container);
-            console.log(new_child);
-            App.scrollTo(e, new_child.$el);
+            App.scrollTo(e, that.spawn_child(view, new_model, parent_container).$el);
         },
         new_event: function(e) {
             var attributes = {
                 name: "New Event",
                 time: {
                     start: new moment(),
-                    end: new moment().add('h', 1)
+                    end: new moment().add(1, 'h')
                 },
                 place: "",
                 description: ""
@@ -793,51 +821,63 @@ $(function(){
             'mouseenter .panel-title .close': 'add_remove_warn',
             'mouseleave .panel-title .close': 'hide_remove_warn',
             'dblclick .editable': 'edit',
-            'keypress  .editing': 'save',
-            'focus     .editing': 'save',
-            'input     .editing': 'save',
-            'paste     .editing': 'save',
-            'cut       .editing': 'save',
-            'drop      .editing': 'save',
-            'textInput .editing': 'save',
+            'keypress  .editing': 'keypress',
+            'click .editing': 'editing_click',
             'blur .editing': 'done_editing',
         },
         initialize: function() {
-            this.listenTo(this.model, 'remove', this.remove);
+            this.listenTo(this.model, 'destroy', this.remove);
         },
         edit: function(e) {
             $('.editing').removeClass('editing').attr('contenteditable', 'false');
             $('.ui-draggable').draggable('enable');
-            this.$(e.target).addClass('editing').removeClass('text-muted').attr('contenteditable', 'true')
-            this.$el.draggable('disable');
+            var that = this;
+            this.$(e.target).addClass('editing').removeClass('text-muted').attr('contenteditable', 'true').focus();
+            if (this.$el.hasClass('ui-draggable')) {
+                this.$el.draggable('disable');
+            }
+        },
+        keypress: function(e) {
+            if (e.keyCode == 13) {
+                this.done_editing(e);
+                e.preventDefault();
+            }
         },
         save: function(e) {
             $edit_el = this.$(e.target);
             attr = $edit_el.data('attr');
             if (attr == 'start') {
                 this.model.set('time', {
-                    'start': new moment($edit_el.text()),
+                    'start': new moment($edit_el.text() + " +0000", "YYYY-MM-DD HH:mm Z"),
                     'end': this.model.get('time').end
                 });
             } else if (attr == 'end') {
                 this.model.set('time', {
                     'start': this.model.get('time').start,
-                    'end': new moment($edit_el.text())
+                    'end': new moment($edit_el.text() + " +0000", "YYYY-MM-DD HH:mm Z")
                 });
             } else {
                 this.model.set(attr, $edit_el.text());
             }
             return $edit_el;
         },
+        editing_click: function(e) {
+            e.preventDefault();
+        },
         done_editing: function(e) {
-            var target = this.save(e).removeClass('editing').attr('contenteditable', 'false');
-            if (target.text() && target.text() == "") {
-                target.addClass('text-muted');
+            if (!(e.type != "keypress" && $(e.target).hasClass('editing'))) {
+                var target = this.set(e).removeClass('editing').attr('contenteditable', 'false');
+                if (target.text() && target.text() == "") {
+                    target.addClass('text-muted');
+                }
+                if (this.$el.hasClass('ui-draggable')) {
+                    this.$el.draggable('enable');
+                }
             }
-            this.$el.draggable('enable');
         },
         remove_model: function() {
-            console.warn('Remove model!');
+            this.model.destroy();
+            return this;
         },
         add_remove_warn: function(e) {
             this.$el.addClass('panel-danger').removeClass('panel-default');
@@ -867,10 +907,6 @@ $(function(){
                 scroll: true,
                 scrollSensitivity: 100,
             });
-            return this;
-        },
-        remove_model: function() {
-            all_events.remove(this.model);
             return this;
         }
     });
@@ -903,8 +939,13 @@ $(function(){
                         that.render_event(new_event);
                         that.$('[data-id="' + event_id + '"]').addClass('btn-success');
                     } else {
-                        that.$('[data-id="' + event_id + '"]').addClass('btn-success');
+                        if (!that.$('[data-id="' + event_id + '"]').length) {
+                            that.render_event(_.find(events, function(e) {
+                                return e.id == event_id;
+                            }));
+                        }
                         // provide visual feedback that a duplicate exists.
+                        that.$('[data-id="' + event_id + '"]').addClass('btn-success');
                     }
                     var animateNew = window.setTimeout(function() {
                         that.$('.btn-success').removeClass('btn-success').addClass('btn-default');
@@ -944,12 +985,7 @@ $(function(){
             return this;
         },
         render_person: function(p) {
-            var child = all_people.findWhere({'username': p});
-            this.spawn_child(MiniPersonEditView, child, '.job-people');
-        },
-        remove_model: function() {
-            all_jobs.remove(this.model);
-            this.remove();
+            this.spawn_child(MiniPersonEditView, all_people.findWhere({'username': p}), '.job-people');
         }
     });
     var PersonEditView = HasEventsChildrenView.extend({
@@ -972,10 +1008,6 @@ $(function(){
                 scrollSensitivity: 100,
             });
             return this;
-        },
-        remove_model: function() {
-            all_people.remove(this.model);
-            this.remove();
         }
     });
     var ContentSelectableView = Backbone.View.extend({
@@ -1018,7 +1050,7 @@ $(function(){
             return this;
         },
         removeFromParent: function() {
-            console.log(this.options.parent);
+            ;
             return this;
         },
         choose_requirement: function(e) {

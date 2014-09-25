@@ -333,10 +333,10 @@
             </h4>
         </div>
         <div class="panel-body">
-            <% var place_exists = place && place.trim() && place.trim() != "" %>
+            <% var place_exists = typeof place == "string" && place.trim() && place.trim() != "" %>
             <p class="editable <% if (!place_exists) { %> text-muted<% } %>" data-attr="place"><% if (place_exists) { %><%- place %><% } else { %>No place<% } %></p>
             <p><span class="editable" data-attr="start"><%- time.start.format('YYYY-MM-DD HH:mm') %></span> to <span class="editable" data-attr="end"><%- time.end.format('YYYY-MM-DD HH:mm') %></span></p>
-            <% var desc = description && description.trim() && description.trim() != "" %>
+            <% var desc = typeof description == "string" && description.trim() && description.trim() != "" %>
             <p class="editable<% if (!desc) { %> text-muted<% } %>" data-attr="description"><% if (desc) { %><%- description %><% } else { %>No description<% } %></p>
         </div>
     </script>
