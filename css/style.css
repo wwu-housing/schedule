@@ -70,9 +70,6 @@ tr.day h4 {
 .event.past .label {
     opacity: 0;
 }
-.event.past .details {
-    display: none;
-}
 .event.past:hover {
     opacity: .8;
 }
