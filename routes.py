@@ -1,13 +1,6 @@
-import settings
 from models import Person, Event, Job, Base, Association
 
-from bottle import Bottle, abort, request, run, HTTPResponse, static_file
-from sqlalchemy import create_engine
-
-engine = create_engine(settings.dbpath)
-Base.metadata.bind = engine
-
-from sqlalchemy.orm import sessionmaker
+from bottle import abort, request, run, HTTPResponse, static_file
 
 import json
 
@@ -130,15 +123,15 @@ class BackboneModel(RESTModel):
                 return HTTPResponse(status=204)
         abort(404)
 
-class PeopleModel(BackboneModel):
+class People(BackboneModel):
     base = '/people'
     model = Person
 
-class EventModel(BackboneModel):
+class Events(BackboneModel):
     base = '/events'
     model = Event
 
-class JobModel(BackboneModel):
+class Jobs(BackboneModel):
     base = '/jobs'
     model = Job
 
@@ -151,16 +144,3 @@ class StaticFiles(object):
 
     def get(self, filename):
         return static_file(filename, root=self.root)
-
-DBSession = sessionmaker()
-DBSession.bind = engine
-session = DBSession()
-
-app = Bottle()
-
-PeopleModel(app, session)
-EventModel(app, session)
-JobModel(app, session)
-StaticFiles(app, settings.staticroot)
-
-app.run(host='localhost', port='8009', reloader=True);

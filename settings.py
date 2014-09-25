@@ -1,2 +1,4 @@
 dbpath = 'sqlite:///schedule.db'
-staticroot = '/home/littlec8/public_html/schedule/static/'
+staticroot = 'static/'
+port = 8009
+ip = 'localhost'
