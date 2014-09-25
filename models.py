@@ -26,7 +26,7 @@ class Serializer(object):
         """
         Convert dictionary into proper kwargs for the model constructor.
         """
-        return m;
+        return {str(k): v for k, v in m.items()}
 
 person_job = Table('person_job', Base.metadata,
     Column('person_id', Integer, ForeignKey('person.id')),
@@ -40,9 +40,11 @@ class Person(Base, Serializer):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     username = Column(String, unique=True)
+    events = relationship("personEvent", backref="person", cascade="all, delete, delete-orphan")
 
     @staticmethod
     def from_dict(m, db):
+        m = Serializer.from_dict(m, db)
         if m.get("events", False):
             reqs = []
             newreqs = []
@@ -76,6 +78,7 @@ class Event(Base, Serializer):
 
     @staticmethod
     def from_dict(m, db):
+        m = Serializer.from_dict(m, db)
         if m.get("time", False):
             m["time_start"] = datetime.strptime(m["time"]["start"][0:19], "%Y-%m-%dT%H:%M:%S")
             m["time_end"] = datetime.strptime(m["time"]["end"][0:19], "%Y-%m-%dT%H:%M:%S")
@@ -99,12 +102,16 @@ class Job(Base, Serializer):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     people = relationship("Person", secondary=person_job, backref="people")
+    events = relationship("jobEvent", backref="job", cascade="all, delete, delete-orphan")
 
     @staticmethod
     def from_dict(m, db):
+        m = Serializer.from_dict(m, db)
         if m.get("people", False):
             m["people"] = list(set(m["people"]))
-            m["people"] = [db.query(Person).filter(Person.username == p)[0] for p in m["people"]]
+            m["people"] = [db.query(Person).filter(Person.username == p)[0] for p in m["people"] if db.query(Person).filter(Person.username == p).count() > 0]
+        if m.get("title_sanitized", False):
+            del m["title_sanitized"]
         if m.get("events", False):
             reqs = []
             newreqs = []
@@ -143,12 +150,10 @@ class EventMixin(Association):
 class jobEvent(EventMixin, Base):
     __tablename__ = 'jobEvent'
     job_id = Column(Integer, ForeignKey('job.id'), primary_key=True)
-    job = relationship("Job", backref="events")
 
 class personEvent(EventMixin, Base):
     __tablename__ = 'personEvent'
     person_id = Column(Integer, ForeignKey('person.id'), primary_key=True)
-    person = relationship("Person", backref="events")
 
 engine = create_engine('sqlite:///schedule.db')
 Base.metadata.create_all(engine)

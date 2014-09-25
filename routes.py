@@ -34,7 +34,6 @@ class RESTModel(object):
         abort(405)
 
     def post(self):
-        """Create"""
         abort(405)
 
     def delete(self, id):
@@ -44,10 +43,24 @@ class RESTModel(object):
 class BackboneModel(RESTModel):
     def __init__(self, app, db):
         self.db = db
+        app.route(self.base, 'PUT')(self.putall)
         super(BackboneModel, self).__init__(app)
 
     def query(self):
         return self.db.query(self.model)
+
+    def insert(self, params):
+        m = self.model(**self.model.from_dict(params, self.db))
+        self.db.add(m)
+        self.db.commit()
+        self.db.refresh(m)
+        return m
+
+    def putall(self):
+        self.query().delete()
+        for item in request.json:
+            self.insert(item)
+        return HTTPResponse(status=200, body=json.dumps([i.to_dict() for i in self.query().all()]))
 
     def get(self, id=None):
         if id:
@@ -65,9 +78,10 @@ class BackboneModel(RESTModel):
             m = self.query().get(id)
             status = 201
             if m:
+                self.db.delete(m)
                 status = 200
             m = self.model()
-            response = self.patch(id)
+            response = self.post()
             response.status = status
             return response
         abort(404)
@@ -99,10 +113,7 @@ class BackboneModel(RESTModel):
         abort(404)
 
     def post(self):
-        m = self.model(**self.model.from_dict(request.json, self.db))
-        self.db.add(m)
-        self.db.commit()
-        self.db.refresh(m)
+        m = self.insert(request.json)
         response = HTTPResponse(status=201, body=json.dumps(m.to_dict()))
         response.content_type = "application/json"
         response.add_header("Location", "{}/{}".format(self.base, m.id))
